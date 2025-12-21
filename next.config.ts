@@ -12,7 +12,6 @@ const nextConfig: NextConfig = {
   /* config options here */
   // Fix for workspace root detection when multiple lockfiles exist.
   // Next.js will look for dependencies relative to this root.
-  // @ts-expect-error - `turbopack` is supported by Next.js but may not exist in older type defs.
   turbopack: {
     root: __dirname,
   },
