@@ -62,11 +62,18 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
             {/* Subject and Info - Compact */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2 mb-1">
-                <h3 className={`text-lg font-bold leading-tight flex-1 line-clamp-2 ${
-                  passed ? 'text-slate-400' : 'text-slate-900'
-                }`}>
-                  {session.subject}
-                </h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className={`text-lg font-bold leading-tight line-clamp-2 ${
+                    passed ? 'text-slate-400' : 'text-slate-900'
+                  }`}>
+                    {session.subject}
+                  </h3>
+                  {session.notConfirmed && !passed && (
+                    <span className="inline-block mt-1 text-xs font-bold text-red-600 animate-pulse">
+                      ⚠️ غير مؤكد
+                    </span>
+                  )}
+                </div>
                 {/* Like Button */}
                 {!passed && (
                   <button
