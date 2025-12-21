@@ -2,6 +2,7 @@ import Header from './home/components/Header';
 import ScheduleManager from './home/components/ScheduleManager';
 import BackgroundTexture from './home/components/BackgroundTexture';
 import WhatsAppButton from './home/components/WhatsAppButton';
+import InstagramButton from './home/components/InstagramButton';
 
 /*
   Main Page component.
@@ -21,8 +22,9 @@ export default function Home() {
         </div>
       </div>
       
-      {/* WhatsApp Button */}
+      {/* Social Media Buttons */}
       <WhatsAppButton />
+      <InstagramButton />
       
       {/* Footer / Copyright */}
       <footer className="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-md border-t border-slate-200 p-4 text-center z-20">
