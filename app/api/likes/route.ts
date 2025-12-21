@@ -75,13 +75,14 @@ async function findExistingGist(): Promise<string | null> {
 async function getLikesFromGist(): Promise<Record<string, number>> {
   try {
     // First try environment variable, then cached, then search for existing
-    let gistId = GIST_ID || cachedGistId;
+    let gistId: string | null = GIST_ID || cachedGistId || null;
     
     if (!gistId) {
       // Search for existing Gist
-      gistId = await findExistingGist();
-      if (gistId) {
-        cachedGistId = gistId;
+      const foundGistId = await findExistingGist();
+      if (foundGistId) {
+        gistId = foundGistId;
+        cachedGistId = foundGistId;
       }
     }
 
@@ -125,13 +126,14 @@ async function getLikesFromGist(): Promise<Record<string, number>> {
 async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> {
   try {
     // First try environment variable, then cached, then search for existing
-    let gistId = GIST_ID || cachedGistId;
+    let gistId: string | null = GIST_ID || cachedGistId || null;
     
     if (!gistId) {
       // Search for existing Gist before creating new one
-      gistId = await findExistingGist();
-      if (gistId) {
-        cachedGistId = gistId;
+      const foundGistId = await findExistingGist();
+      if (foundGistId) {
+        gistId = foundGistId;
+        cachedGistId = foundGistId;
       }
     }
 
@@ -158,9 +160,10 @@ async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> 
       if (!createResponse.ok) {
         // If creation fails (maybe duplicate), try to find existing
         if (createResponse.status === 422) {
-          gistId = await findExistingGist();
-          if (gistId) {
-            cachedGistId = gistId;
+          const foundGistId = await findExistingGist();
+          if (foundGistId) {
+            gistId = foundGistId;
+            cachedGistId = foundGistId;
             // Retry update with found Gist ID
             return await saveLikesToGist(likes);
           }
@@ -170,7 +173,9 @@ async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> 
 
       const createData = await createResponse.json();
       gistId = createData.id;
-      cachedGistId = gistId;
+      if (gistId) {
+        cachedGistId = gistId;
+      }
       // Log the Gist ID so user can add it to GIST_ID env var for persistence
       console.log(`✅ Created new Gist for likes. Gist ID: ${gistId}`);
       console.log(`💡 To persist across deployments, set GIST_ID=${gistId} in Vercel environment variables`);
