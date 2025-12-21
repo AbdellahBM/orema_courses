@@ -1,4 +1,6 @@
 import type { NextConfig } from "next";
+import path from "path";
+import { fileURLToPath } from "url";
 
 /*
   Next.js configuration.
@@ -8,12 +10,14 @@ import type { NextConfig } from "next";
   module resolution (like failing to resolve `tailwindcss`).
 */
 
+const configDir = path.dirname(fileURLToPath(import.meta.url));
+
 const nextConfig: NextConfig = {
   /* config options here */
   // Fix for workspace root detection when multiple lockfiles exist.
   // Next.js will look for dependencies relative to this root.
   turbopack: {
-    root: __dirname,
+    root: configDir,
   },
 };
 
