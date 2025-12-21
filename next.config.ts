@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 import path from "path";
-import { fileURLToPath } from "url";
 
 /*
   Next.js configuration.
@@ -10,15 +9,18 @@ import { fileURLToPath } from "url";
   module resolution (like failing to resolve `tailwindcss`).
 */
 
-const configDir = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = path.resolve(process.cwd());
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Fix for workspace root detection when multiple lockfiles exist.
-  // Next.js will look for dependencies relative to this root.
-  turbopack: {
-    root: configDir,
-  },
+  /*
+    Fix for workspace root detection when multiple lockfiles exist.
+    Next.js internally normalizes both `outputFileTracingRoot` and `turbopack.root`
+    to the SAME value. Setting `outputFileTracingRoot` here prevents Next from
+    walking up the filesystem to a different lockfile (e.g. `C:\\Users\\bouaa\\package-lock.json`).
+  */
+  outputFileTracingRoot: projectRoot,
+  turbopack: { root: projectRoot },
 };
 
 export default nextConfig;
