@@ -1,20 +1,30 @@
+/*
+  FILE PURPOSE:
+  `app/api/likes/route.ts` implements the shared "likes" backend used by the calendar UI.
+  It exposes:
+  - GET  /api/likes   -> returns a map of { [classId]: count }
+  - POST /api/likes  -> increments/decrements a class like counter and returns the new count
+
+  UTILITY IN APP:
+  Likes must be visible to all visitors and persist across reloads. This route provides that
+  persistence in both local development and production (Vercel).
+
+  IMPORTANT CHANGES / REASONING:
+  - Production (Vercel KV) now uses atomic Redis hash increments (HINCRBY) instead of
+    read-modify-write of a single JSON blob. This prevents lost updates when multiple users
+    like at the same time.
+  - Responses are marked no-store and the route is forced dynamic to avoid caching issues
+    that can make counters appear "stale" or inconsistent in production.
+*/
+
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { kv } from '@vercel/kv';
 
-/*
-  API route for handling class likes.
-  
-  PERSISTENCE STRATEGY:
-  1. Vercel/Production: Uses Vercel KV (Redis) for persistent shared storage.
-     - Requires 'Create KV Database' in Vercel Project Settings.
-     - Environment variables: KV_REST_API_URL, KV_REST_API_TOKEN (auto-added by Vercel).
-  
-  2. Local Development: Uses local JSON file (data/likes.json).
-     - Works without internet/database.
-     - Data persists locally in the project folder.
-*/
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Local storage configuration
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -24,6 +34,11 @@ const LIKES_FILE_PATH = path.join(DATA_DIR, 'likes.json');
 
 // Check if we should use Vercel KV
 const shouldUseKV = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN;
+
+// KV storage key (versioned to avoid Redis "wrong type" errors if an older deployment
+// stored a JSON blob at the previous key name).
+const KV_LIKES_HASH_KEY = 'class_likes_v2';
+const KV_LEGACY_JSON_KEY = 'class_likes';
 
 // Local: Ensure data directory exists and file is valid
 function ensureLocalStorage() {
@@ -58,8 +73,26 @@ function ensureLocalStorage() {
 async function getLikes(): Promise<Record<string, number>> {
   if (shouldUseKV) {
     try {
-      const likes = await kv.get<Record<string, number>>('class_likes');
-      return likes || {};
+      const likes = await kv.hgetall<Record<string, string | number>>(KV_LIKES_HASH_KEY);
+      if (!likes) {
+        // Backward compatibility: migrate from legacy JSON blob key if present.
+        const legacy = await kv.get<Record<string, number>>(KV_LEGACY_JSON_KEY);
+        if (legacy && typeof legacy === 'object') {
+          try {
+            await kv.hset(KV_LIKES_HASH_KEY, legacy);
+          } catch (migrateError) {
+            console.error('KV Migration Error:', migrateError);
+          }
+          return legacy;
+        }
+        return {};
+      }
+      const parsed: Record<string, number> = {};
+      for (const [classId, raw] of Object.entries(likes)) {
+        const n = typeof raw === 'number' ? raw : Number(raw);
+        parsed[classId] = Number.isFinite(n) && n >= 0 ? n : 0;
+      }
+      return parsed;
     } catch (error) {
       console.error('KV Read Error:', error);
       return {};
@@ -86,23 +119,26 @@ async function getLikes(): Promise<Record<string, number>> {
   }
 }
 
-// Write likes (Abstracted)
-async function saveLikes(likes: Record<string, number>) {
-  if (shouldUseKV) {
-    try {
-      await kv.set('class_likes', likes);
-    } catch (error) {
-      console.error('KV Write Error:', error);
-    }
-  } else {
-    // Local Fallback
-    ensureLocalStorage();
-    try {
-      fs.writeFileSync(LIKES_FILE_PATH, JSON.stringify(likes, null, 2), 'utf-8');
-    } catch (error) {
-      console.error('Local Write Error:', error);
-    }
+// Local: Write likes
+async function saveLikesLocal(likes: Record<string, number>) {
+  ensureLocalStorage();
+  try {
+    fs.writeFileSync(LIKES_FILE_PATH, JSON.stringify(likes, null, 2), 'utf-8');
+  } catch (error) {
+    console.error('Local Write Error:', error);
   }
+}
+
+// KV: Atomic increment/decrement for a single class
+async function mutateLikeKV(classId: string, action: 'like' | 'unlike'): Promise<number> {
+  const delta = action === 'like' ? 1 : -1;
+  let nextCount = await kv.hincrby(KV_LIKES_HASH_KEY, classId, delta);
+  // Clamp to 0 to avoid negatives if "unlike" is called too many times.
+  if (nextCount < 0) {
+    await kv.hset(KV_LIKES_HASH_KEY, { [classId]: 0 });
+    nextCount = 0;
+  }
+  return nextCount;
 }
 
 // --- API HANDLERS ---
@@ -110,10 +146,14 @@ async function saveLikes(likes: Record<string, number>) {
 export async function GET() {
   try {
     const likes = await getLikes();
-    return NextResponse.json({ likes });
+    const res = NextResponse.json({ likes });
+    res.headers.set('Cache-Control', 'no-store, max-age=0');
+    return res;
   } catch (error) {
     console.error('GET Error:', error);
-    return NextResponse.json({ likes: {} });
+    const res = NextResponse.json({ likes: {} });
+    res.headers.set('Cache-Control', 'no-store, max-age=0');
+    return res;
   }
 }
 
@@ -129,31 +169,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const likes = await getLikes();
-    const currentCount = likes[classId] || 0;
-
-    if (action === 'like') {
-      likes[classId] = currentCount + 1;
-    } else if (action === 'unlike') {
-      likes[classId] = Math.max(0, currentCount - 1);
-    } else {
+    if (action !== 'like' && action !== 'unlike') {
       return NextResponse.json(
         { error: 'Invalid action' },
         { status: 400 }
       );
     }
 
-    await saveLikes(likes);
+    let nextCount: number;
 
-    return NextResponse.json({ 
-      success: true, 
-      count: likes[classId] 
+    if (shouldUseKV) {
+      nextCount = await mutateLikeKV(classId, action);
+    } else {
+      const likes = await getLikes();
+      const currentCount = likes[classId] || 0;
+      likes[classId] = action === 'like' ? currentCount + 1 : Math.max(0, currentCount - 1);
+      await saveLikesLocal(likes);
+      nextCount = likes[classId];
+    }
+
+    const res = NextResponse.json({
+      success: true,
+      count: nextCount,
     });
+    res.headers.set('Cache-Control', 'no-store, max-age=0');
+    return res;
   } catch (error) {
     console.error('POST Error:', error);
-    return NextResponse.json(
+    const res = NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }
     );
+    res.headers.set('Cache-Control', 'no-store, max-age=0');
+    return res;
   }
 }
