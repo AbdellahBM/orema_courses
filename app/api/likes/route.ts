@@ -42,10 +42,49 @@ let cachedGistId = GIST_ID; // Cache the Gist ID once created
 // Use GitHub Gist if token is provided, otherwise use in-memory
 const useGist = !!GITHUB_TOKEN;
 
+// Find existing Gist by searching user's gists
+async function findExistingGist(): Promise<string | null> {
+  try {
+    const response = await fetch('https://api.github.com/gists', {
+      method: 'GET',
+      headers: {
+        'Authorization': `token ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const gists = await response.json();
+    // Find gist that contains our filename
+    const existingGist = gists.find((gist: any) => 
+      gist.files && gist.files[GIST_FILENAME]
+    );
+    
+    return existingGist ? existingGist.id : null;
+  } catch (error) {
+    console.error('Error finding existing Gist:', error);
+    return null;
+  }
+}
+
 // Read likes from GitHub Gist
 async function getLikesFromGist(): Promise<Record<string, number>> {
   try {
-    const gistId = cachedGistId || GIST_ID;
+    // First try environment variable, then cached, then search for existing
+    let gistId = GIST_ID || cachedGistId;
+    
+    if (!gistId) {
+      // Search for existing Gist
+      gistId = await findExistingGist();
+      if (gistId) {
+        cachedGistId = gistId;
+      }
+    }
+
     if (!gistId) {
       // No Gist ID yet - will be created on first write
       return {};
@@ -62,7 +101,8 @@ async function getLikesFromGist(): Promise<Record<string, number>> {
 
     if (!response.ok) {
       if (response.status === 404) {
-        // Gist doesn't exist yet, return empty (will be created on first write)
+        // Gist doesn't exist, clear cache and return empty
+        cachedGistId = '';
         return {};
       }
       throw new Error(`GitHub API error: ${response.status}`);
@@ -84,7 +124,16 @@ async function getLikesFromGist(): Promise<Record<string, number>> {
 // Save likes to GitHub Gist
 async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> {
   try {
-    let gistId = cachedGistId || GIST_ID;
+    // First try environment variable, then cached, then search for existing
+    let gistId = GIST_ID || cachedGistId;
+    
+    if (!gistId) {
+      // Search for existing Gist before creating new one
+      gistId = await findExistingGist();
+      if (gistId) {
+        cachedGistId = gistId;
+      }
+    }
 
     // Create Gist if it doesn't exist
     if (!gistId) {
@@ -107,6 +156,15 @@ async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> 
       });
 
       if (!createResponse.ok) {
+        // If creation fails (maybe duplicate), try to find existing
+        if (createResponse.status === 422) {
+          gistId = await findExistingGist();
+          if (gistId) {
+            cachedGistId = gistId;
+            // Retry update with found Gist ID
+            return await saveLikesToGist(likes);
+          }
+        }
         throw new Error(`Failed to create Gist: ${createResponse.status}`);
       }
 
@@ -116,30 +174,51 @@ async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> 
       // Log the Gist ID so user can add it to GIST_ID env var for persistence
       console.log(`✅ Created new Gist for likes. Gist ID: ${gistId}`);
       console.log(`💡 To persist across deployments, set GIST_ID=${gistId} in Vercel environment variables`);
+      return true;
     } else {
-      // Update existing Gist
-      const updateResponse = await fetch(`https://api.github.com/gists/${gistId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `token ${GITHUB_TOKEN}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          files: {
-            [GIST_FILENAME]: {
-              content: JSON.stringify(likes, null, 2),
-            },
+      // Update existing Gist with retry logic for conflicts
+      let retries = 3;
+      while (retries > 0) {
+        const updateResponse = await fetch(`https://api.github.com/gists/${gistId}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json',
           },
-        }),
-      });
+          body: JSON.stringify({
+            files: {
+              [GIST_FILENAME]: {
+                content: JSON.stringify(likes, null, 2),
+              },
+            },
+          }),
+        });
 
-      if (!updateResponse.ok) {
+        if (updateResponse.ok) {
+          return true;
+        }
+
+        // Handle 409 conflict - another instance updated, retry with fresh data
+        if (updateResponse.status === 409 && retries > 1) {
+          // Wait a bit and retry
+          await new Promise(resolve => setTimeout(resolve, 100));
+          retries--;
+          continue;
+        }
+
+        // Handle 404 - Gist was deleted, try to recreate or find new one
+        if (updateResponse.status === 404) {
+          cachedGistId = '';
+          // Try to find existing or will create new one on next attempt
+          return await saveLikesToGist(likes);
+        }
+
         throw new Error(`Failed to update Gist: ${updateResponse.status}`);
       }
+      
+      return false;
     }
-
-    return true;
   } catch (error) {
     console.error('Gist Write Error:', error);
     return false;
