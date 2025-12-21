@@ -12,6 +12,7 @@ export interface ClassSession {
   room?: string;
   professor: string;
   isNextWeek?: boolean;
+  notConfirmed?: boolean; // If true, class is not yet confirmed
   category?: string; // e.g., 'Law', 'Economics'
   /**
    * Hardcoded starting likes for this class (stored in code).

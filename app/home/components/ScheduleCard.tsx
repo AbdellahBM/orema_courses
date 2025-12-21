@@ -145,6 +145,15 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
             
             {/* Category Tags - Compact */}
             <div className="flex items-center gap-1.5 flex-wrap">
+              {session.notConfirmed && (
+                <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                  passed 
+                    ? 'bg-slate-50 text-slate-400 border-slate-200' 
+                    : 'bg-orange-50 text-orange-700 border-orange-200'
+                }`}>
+                  غير مؤكد
+                </div>
+              )}
               <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                 passed 
                   ? 'bg-slate-50 text-slate-400 border-slate-200' 
