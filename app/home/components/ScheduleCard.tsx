@@ -18,7 +18,10 @@ interface ScheduleCardProps {
 }
 
 export default function ScheduleCard({ session, index }: ScheduleCardProps) {
-  const { likes, isLiked, toggleLike } = useLikes(session.id);
+  const { likes, isLiked, toggleLike, isLoading } = useLikes(
+    session.id,
+    session.initialLikes ?? 0
+  );
   const categoryLabel = session.category === 'Law' ? 'قانون' : 'اقتصاد';
   const categoryColor = session.category === 'Law' 
     ? 'bg-blue-50 text-blue-700 border-blue-200' 
@@ -82,9 +85,10 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
                         className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`}
                       />
                     </motion.div>
-                    {likes > 0 && (
-                      <span className="text-[10px] font-bold">{likes}</span>
-                    )}
+                    {/* Always show the counter (including 0) */}
+                    <span className="text-[10px] font-bold tabular-nums">
+                      {isLoading ? '…' : likes}
+                    </span>
                   </button>
                 )}
               </div>

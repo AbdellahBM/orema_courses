@@ -6,10 +6,11 @@ import { useState, useEffect } from 'react';
   Custom hook to manage likes for class sessions.
   Fetches likes from server API and updates them persistently.
   Uses optimistic updates for better UX.
+  Accepts a hardcoded initial value (stored in code) so the counter is always visible.
 */
 
-export function useLikes(classId: string) {
-  const [likes, setLikes] = useState<number>(0);
+export function useLikes(classId: string, initialLikes = 0) {
+  const [likes, setLikes] = useState<number>(initialLikes);
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -19,8 +20,9 @@ export function useLikes(classId: string) {
       try {
         const response = await fetch('/api/likes');
         const data = await response.json();
-        const count = data.likes?.[classId] || 0;
-        setLikes(count);
+        // If server has a value, it wins. Otherwise keep the hardcoded initial value.
+        const serverCount = data.likes?.[classId];
+        if (typeof serverCount === 'number') setLikes(serverCount);
         
         // Check if user has liked (stored in localStorage for user-specific state)
         if (typeof window !== 'undefined') {
@@ -38,7 +40,7 @@ export function useLikes(classId: string) {
     };
 
     fetchLikes();
-  }, [classId]);
+  }, [classId, initialLikes]);
 
   const toggleLike = async () => {
     // Optimistic update

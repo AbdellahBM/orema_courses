@@ -4,6 +4,7 @@ import { ClassSession } from "./types";
   Data for the class schedule.
   Contains the list of support classes for the week with precise ISO dates.
   Base start date: Monday, Dec 22, 2025.
+  Note: `initialLikes` is the hardcoded starting value (editable in code).
 */
 
 export const scheduleData: ClassSession[] = [
@@ -18,6 +19,7 @@ export const scheduleData: ClassSession[] = [
     room: "1",
     professor: "الأستاذ محمد بويردن",
     category: "Economics",
+    initialLikes: 0,
   },
   {
     id: "2",
@@ -29,6 +31,7 @@ export const scheduleData: ClassSession[] = [
     room: "5",
     professor: "الأستاذ إبراهيم الصمدي",
     category: "Law",
+    initialLikes: 0,
   },
   {
     id: "3",
@@ -39,6 +42,7 @@ export const scheduleData: ClassSession[] = [
     location: "ملحقة 1",
     professor: "الأستاذة هدى السبيطي",
     category: "Economics",
+    initialLikes: 0,
   },
   {
     id: "4",
@@ -50,6 +54,7 @@ export const scheduleData: ClassSession[] = [
     room: "5",
     professor: "الأستاذ عبد النور الأندلسي",
     category: "Law",
+    initialLikes: 0,
   },
   
   // Tuesday - Dec 23, 2025
@@ -63,6 +68,7 @@ export const scheduleData: ClassSession[] = [
     room: "2",
     professor: "الأستاذ زكرياء الوردي",
     category: "Economics",
+    initialLikes: 0,
   },
   {
     id: "6",
@@ -74,6 +80,7 @@ export const scheduleData: ClassSession[] = [
     room: "6",
     professor: "الأستاذ محمد المثيوي",
     category: "Law",
+    initialLikes: 0,
   },
 
   // Saturday (Next Week) - Jan 3, 2026
@@ -88,5 +95,6 @@ export const scheduleData: ClassSession[] = [
     professor: "الأستاذ صهيب الحداد",
     isNextWeek: true,
     category: "Economics",
+    initialLikes: 0,
   },
 ];
