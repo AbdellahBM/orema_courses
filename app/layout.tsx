@@ -5,7 +5,7 @@ import "./globals.css";
 /*
   This file defines the root layout of the application.
   It configures the Arabic font (Cairo), sets the document language to Arabic (RTL),
-  and applies global styles. The favicon is set via icon.png in the app directory.
+  and applies global styles.
 */
 
 const cairo = Cairo({
@@ -17,10 +17,6 @@ const cairo = Cairo({
 export const metadata: Metadata = {
   title: "جدولة حصص الدعم",
   description: "برنامج حصص الدعم - منظمة التجديد الطلابي",
-  icons: {
-    icon: "/icon.png",
-    apple: "/icon.png",
-  },
 };
 
 export const viewport: Viewport = {

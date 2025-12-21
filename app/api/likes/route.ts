@@ -1,64 +1,126 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { kv } from '@vercel/kv';
 
 /*
   API route for handling class likes.
-  Stores likes in a JSON file for persistence across all visitors.
-  Minimal server setup - just file-based storage.
+  
+  PERSISTENCE STRATEGY:
+  1. Vercel/Production: Uses Vercel KV (Redis) for persistent shared storage.
+     - Requires 'Create KV Database' in Vercel Project Settings.
+     - Environment variables: KV_REST_API_URL, KV_REST_API_TOKEN (auto-added by Vercel).
+  
+  2. Local Development: Uses local JSON file (data/likes.json).
+     - Works without internet/database.
+     - Data persists locally in the project folder.
 */
 
-const LIKES_FILE_PATH = path.join(process.cwd(), 'data', 'likes.json');
+// Local storage configuration
+const DATA_DIR = path.join(process.cwd(), 'data');
+const LIKES_FILE_PATH = path.join(DATA_DIR, 'likes.json');
 
-// Ensure data directory exists
-function ensureDataDir() {
-  const dataDir = path.join(process.cwd(), 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-}
+// --- HELPER FUNCTIONS ---
 
-// Read likes from file
-function readLikes(): Record<string, number> {
-  ensureDataDir();
+// Check if we should use Vercel KV
+const shouldUseKV = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN;
+
+// Local: Ensure data directory exists and file is valid
+function ensureLocalStorage() {
   try {
-    if (fs.existsSync(LIKES_FILE_PATH)) {
-      const data = fs.readFileSync(LIKES_FILE_PATH, 'utf-8');
-      return JSON.parse(data);
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(LIKES_FILE_PATH)) {
+      fs.writeFileSync(LIKES_FILE_PATH, '{}', 'utf-8');
+    } else {
+      // Validate existing file - reset if invalid
+      try {
+        const content = fs.readFileSync(LIKES_FILE_PATH, 'utf-8').trim();
+        if (!content || content === '') {
+          fs.writeFileSync(LIKES_FILE_PATH, '{}', 'utf-8');
+        } else {
+          // Try to parse to validate JSON
+          JSON.parse(content);
+        }
+      } catch (error) {
+        // File is corrupted, reset it
+        console.warn('Invalid JSON file detected, resetting to empty object');
+        fs.writeFileSync(LIKES_FILE_PATH, '{}', 'utf-8');
+      }
     }
   } catch (error) {
-    console.error('Error reading likes:', error);
-  }
-  return {};
-}
-
-// Write likes to file
-function writeLikes(likes: Record<string, number>) {
-  ensureDataDir();
-  try {
-    fs.writeFileSync(LIKES_FILE_PATH, JSON.stringify(likes, null, 2), 'utf-8');
-  } catch (error) {
-    console.error('Error writing likes:', error);
+    console.error('Local storage init error:', error);
   }
 }
 
-// GET - Fetch all likes
+// Read likes (Abstracted)
+async function getLikes(): Promise<Record<string, number>> {
+  if (shouldUseKV) {
+    try {
+      const likes = await kv.get<Record<string, number>>('class_likes');
+      return likes || {};
+    } catch (error) {
+      console.error('KV Read Error:', error);
+      return {};
+    }
+  } else {
+    // Local Fallback
+    ensureLocalStorage();
+    try {
+      const data = fs.readFileSync(LIKES_FILE_PATH, 'utf-8').trim();
+      if (!data || data === '') {
+        return {};
+      }
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Local Read Error:', error);
+      // Reset file if corrupted
+      try {
+        fs.writeFileSync(LIKES_FILE_PATH, '{}', 'utf-8');
+      } catch (writeError) {
+        console.error('Failed to reset file:', writeError);
+      }
+      return {};
+    }
+  }
+}
+
+// Write likes (Abstracted)
+async function saveLikes(likes: Record<string, number>) {
+  if (shouldUseKV) {
+    try {
+      await kv.set('class_likes', likes);
+    } catch (error) {
+      console.error('KV Write Error:', error);
+    }
+  } else {
+    // Local Fallback
+    ensureLocalStorage();
+    try {
+      fs.writeFileSync(LIKES_FILE_PATH, JSON.stringify(likes, null, 2), 'utf-8');
+    } catch (error) {
+      console.error('Local Write Error:', error);
+    }
+  }
+}
+
+// --- API HANDLERS ---
+
 export async function GET() {
   try {
-    const likes = readLikes();
+    const likes = await getLikes();
     return NextResponse.json({ likes });
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to fetch likes' },
-      { status: 500 }
-    );
+    console.error('GET Error:', error);
+    return NextResponse.json({ likes: {} });
   }
 }
 
-// POST - Update like count
 export async function POST(request: NextRequest) {
   try {
-    const { classId, action } = await request.json();
+    const body = await request.json();
+    const { classId, action } = body;
 
     if (!classId || !action) {
       return NextResponse.json(
@@ -67,7 +129,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const likes = readLikes();
+    const likes = await getLikes();
     const currentCount = likes[classId] || 0;
 
     if (action === 'like') {
@@ -81,17 +143,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    writeLikes(likes);
+    await saveLikes(likes);
 
     return NextResponse.json({ 
       success: true, 
       count: likes[classId] 
     });
   } catch (error) {
+    console.error('POST Error:', error);
     return NextResponse.json(
-      { error: 'Failed to update like' },
+      { error: 'Internal Server Error' },
       { status: 500 }
     );
   }
 }
-

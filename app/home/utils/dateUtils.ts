@@ -25,3 +25,5 @@ export function areAllClassesPassedForDay(day: string, sessions: Array<{ day: st
   return daySessions.every(session => isClassPassed(session.date, session.time));
 }
 
+
+
