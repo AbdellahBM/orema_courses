@@ -1,11 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 /*
   This file defines the root layout of the application.
   It configures the Arabic font (Cairo), sets the document language to Arabic (RTL),
   and applies global styles.
+  It also includes Vercel Analytics and Speed Insights for monitoring and performance tracking.
 */
 
 const cairo = Cairo({
@@ -37,6 +40,8 @@ export default function RootLayout({
         className={`${cairo.variable} antialiased font-sans bg-slate-50 text-slate-900`}
       >
         {children}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
