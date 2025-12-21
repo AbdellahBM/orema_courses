@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { scheduleData } from '../data';
 import ScheduleCard from './ScheduleCard';
-import { CalendarDays, Filter, Search } from 'lucide-react';
+import { Filter, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { areAllClassesPassedForDay, isClassPassed } from '../utils/dateUtils';
 
@@ -143,11 +143,6 @@ export default function ScheduleManager() {
           )}
         </AnimatePresence>
       </div>
-
-      {/* Floating Action Button (Optional, maybe for download later) */}
-      {/* <button className="fixed bottom-6 left-6 bg-blue-600 text-white p-4 rounded-full shadow-xl shadow-blue-600/40 hover:bg-blue-700 transition-colors z-50">
-        <Download className="w-6 h-6" />
-      </button> */}
     </div>
   );
 }

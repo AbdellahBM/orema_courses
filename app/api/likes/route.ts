@@ -1,144 +1,184 @@
 /*
   FILE PURPOSE:
-  `app/api/likes/route.ts` implements the shared "likes" backend used by the calendar UI.
+  `app/api/likes/route.ts` implements the shared "likes" backend using GitHub Gist API for simple JSON storage.
   It exposes:
   - GET  /api/likes   -> returns a map of { [classId]: count }
   - POST /api/likes  -> increments/decrements a class like counter and returns the new count
 
   UTILITY IN APP:
-  Likes must be visible to all visitors and persist across reloads. This route provides that
-  persistence in both local development and production (Vercel).
+  Likes must be visible to all visitors and persist across reloads. This route uses GitHub Gist API
+  (free, requires GitHub token) to store likes in a simple JSON format.
 
   IMPORTANT CHANGES / REASONING:
-  - Production (Vercel KV) now uses atomic Redis hash increments (HINCRBY) instead of
-    read-modify-write of a single JSON blob. This prevents lost updates when multiple users
-    like at the same time.
-  - Responses are marked no-store and the route is forced dynamic to avoid caching issues
-    that can make counters appear "stale" or inconsistent in production.
+  - Uses GitHub Gist API for persistent storage (free, reliable, no credit card needed).
+  - Falls back to in-memory storage if Gist is not configured (development mode).
+  - Responses are marked no-store to avoid caching issues.
+
+  SETUP INSTRUCTIONS:
+  1. Go to https://github.com/settings/tokens
+  2. Click "Generate new token" → "Generate new token (classic)"
+  3. Give it a name like "orematanger-likes"
+  4. Check only "gist" permission
+  5. Copy the token
+  6. In Vercel: Project Settings → Environment Variables → Add GITHUB_TOKEN
+  7. (Optional) Set GIST_ID if you want to use an existing gist, otherwise a new one will be created
 */
 
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { kv } from '@vercel/kv';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Local storage configuration
-const DATA_DIR = path.join(process.cwd(), 'data');
-const LIKES_FILE_PATH = path.join(DATA_DIR, 'likes.json');
+// GitHub Gist configuration
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+const GIST_ID = process.env.GIST_ID || ''; // Optional: existing gist ID, otherwise creates new one
+const GIST_FILENAME = 'orematanger-likes.json';
 
-// --- HELPER FUNCTIONS ---
+// In-memory fallback (for development or if Gist is not configured)
+let inMemoryLikes: Record<string, number> = {};
+let cachedGistId = GIST_ID; // Cache the Gist ID once created
 
-// Check if we should use Vercel KV
-const shouldUseKV = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN;
+// Use GitHub Gist if token is provided, otherwise use in-memory
+const useGist = !!GITHUB_TOKEN;
 
-// KV storage key (versioned to avoid Redis "wrong type" errors if an older deployment
-// stored a JSON blob at the previous key name).
-const KV_LIKES_HASH_KEY = 'class_likes_v2';
-const KV_LEGACY_JSON_KEY = 'class_likes';
-
-// Local: Ensure data directory exists and file is valid
-function ensureLocalStorage() {
+// Read likes from GitHub Gist
+async function getLikesFromGist(): Promise<Record<string, number>> {
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+    const gistId = cachedGistId || GIST_ID;
+    if (!gistId) {
+      // No Gist ID yet - will be created on first write
+      return {};
     }
-    if (!fs.existsSync(LIKES_FILE_PATH)) {
-      fs.writeFileSync(LIKES_FILE_PATH, '{}', 'utf-8');
+
+    const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `token ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        // Gist doesn't exist yet, return empty (will be created on first write)
+        return {};
+      }
+      throw new Error(`GitHub API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const file = data.files[GIST_FILENAME];
+    if (!file || !file.content) {
+      return {};
+    }
+
+    return JSON.parse(file.content);
+  } catch (error) {
+    console.error('Gist Read Error:', error);
+    return {};
+  }
+}
+
+// Save likes to GitHub Gist
+async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> {
+  try {
+    let gistId = cachedGistId || GIST_ID;
+
+    // Create Gist if it doesn't exist
+    if (!gistId) {
+      const createResponse = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          description: 'OreMatanger Class Likes Counter',
+          public: false, // Private gist
+          files: {
+            [GIST_FILENAME]: {
+              content: JSON.stringify(likes, null, 2),
+            },
+          },
+        }),
+      });
+
+      if (!createResponse.ok) {
+        throw new Error(`Failed to create Gist: ${createResponse.status}`);
+      }
+
+      const createData = await createResponse.json();
+      gistId = createData.id;
+      cachedGistId = gistId;
+      // Log the Gist ID so user can add it to GIST_ID env var for persistence
+      console.log(`✅ Created new Gist for likes. Gist ID: ${gistId}`);
+      console.log(`💡 To persist across deployments, set GIST_ID=${gistId} in Vercel environment variables`);
     } else {
-      // Validate existing file - reset if invalid
-      try {
-        const content = fs.readFileSync(LIKES_FILE_PATH, 'utf-8').trim();
-        if (!content || content === '') {
-          fs.writeFileSync(LIKES_FILE_PATH, '{}', 'utf-8');
-        } else {
-          // Try to parse to validate JSON
-          JSON.parse(content);
-        }
-      } catch (error) {
-        // File is corrupted, reset it
-        console.warn('Invalid JSON file detected, resetting to empty object');
-        fs.writeFileSync(LIKES_FILE_PATH, '{}', 'utf-8');
+      // Update existing Gist
+      const updateResponse = await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          files: {
+            [GIST_FILENAME]: {
+              content: JSON.stringify(likes, null, 2),
+            },
+          },
+        }),
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error(`Failed to update Gist: ${updateResponse.status}`);
       }
     }
+
+    return true;
   } catch (error) {
-    console.error('Local storage init error:', error);
+    console.error('Gist Write Error:', error);
+    return false;
   }
 }
 
 // Read likes (Abstracted)
 async function getLikes(): Promise<Record<string, number>> {
-  if (shouldUseKV) {
-    try {
-      const likes = await kv.hgetall<Record<string, string | number>>(KV_LIKES_HASH_KEY);
-      if (!likes) {
-        // Backward compatibility: migrate from legacy JSON blob key if present.
-        const legacy = await kv.get<Record<string, number>>(KV_LEGACY_JSON_KEY);
-        if (legacy && typeof legacy === 'object') {
-          try {
-            await kv.hset(KV_LIKES_HASH_KEY, legacy);
-          } catch (migrateError) {
-            console.error('KV Migration Error:', migrateError);
-          }
-          return legacy;
-        }
-        return {};
-      }
-      const parsed: Record<string, number> = {};
-      for (const [classId, raw] of Object.entries(likes)) {
-        const n = typeof raw === 'number' ? raw : Number(raw);
-        parsed[classId] = Number.isFinite(n) && n >= 0 ? n : 0;
-      }
-      return parsed;
-    } catch (error) {
-      console.error('KV Read Error:', error);
-      return {};
+  if (useGist) {
+    const likes = await getLikesFromGist();
+    if (Object.keys(likes).length > 0) {
+      // Update in-memory cache
+      inMemoryLikes = { ...likes };
+      return likes;
     }
+    // If empty from Gist, return in-memory if available
+    return Object.keys(inMemoryLikes).length > 0 ? inMemoryLikes : {};
   } else {
-    // Local Fallback
-    ensureLocalStorage();
-    try {
-      const data = fs.readFileSync(LIKES_FILE_PATH, 'utf-8').trim();
-      if (!data || data === '') {
-        return {};
-      }
-      return JSON.parse(data);
-    } catch (error) {
-      console.error('Local Read Error:', error);
-      // Reset file if corrupted
-      try {
-        fs.writeFileSync(LIKES_FILE_PATH, '{}', 'utf-8');
-      } catch (writeError) {
-        console.error('Failed to reset file:', writeError);
-      }
-      return {};
+    // In-memory only (development mode)
+    return inMemoryLikes;
+  }
+}
+
+// Save likes (Abstracted)
+async function saveLikes(likes: Record<string, number>): Promise<boolean> {
+  // Always update in-memory cache first
+  inMemoryLikes = { ...likes };
+
+  if (useGist) {
+    const success = await saveLikesToGist(likes);
+    if (!success) {
+      // If Gist fails, at least we have in-memory cache
+      console.warn('Failed to save to Gist, using in-memory cache only');
     }
+    return success;
+  } else {
+    // In-memory only (development mode) - always succeeds
+    return true;
   }
-}
-
-// Local: Write likes
-async function saveLikesLocal(likes: Record<string, number>) {
-  ensureLocalStorage();
-  try {
-    fs.writeFileSync(LIKES_FILE_PATH, JSON.stringify(likes, null, 2), 'utf-8');
-  } catch (error) {
-    console.error('Local Write Error:', error);
-  }
-}
-
-// KV: Atomic increment/decrement for a single class
-async function mutateLikeKV(classId: string, action: 'like' | 'unlike'): Promise<number> {
-  const delta = action === 'like' ? 1 : -1;
-  let nextCount = await kv.hincrby(KV_LIKES_HASH_KEY, classId, delta);
-  // Clamp to 0 to avoid negatives if "unlike" is called too many times.
-  if (nextCount < 0) {
-    await kv.hset(KV_LIKES_HASH_KEY, { [classId]: 0 });
-    nextCount = 0;
-  }
-  return nextCount;
 }
 
 // --- API HANDLERS ---
@@ -176,17 +216,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let nextCount: number;
-
-    if (shouldUseKV) {
-      nextCount = await mutateLikeKV(classId, action);
+    // Get current likes
+    const likes = await getLikes();
+    const currentCount = likes[classId] || 0;
+    
+    // Update count
+    if (action === 'like') {
+      likes[classId] = currentCount + 1;
     } else {
-      const likes = await getLikes();
-      const currentCount = likes[classId] || 0;
-      likes[classId] = action === 'like' ? currentCount + 1 : Math.max(0, currentCount - 1);
-      await saveLikesLocal(likes);
-      nextCount = likes[classId];
+      likes[classId] = Math.max(0, currentCount - 1);
     }
+
+    // Save updated likes
+    await saveLikes(likes);
+    const nextCount = likes[classId];
 
     const res = NextResponse.json({
       success: true,
