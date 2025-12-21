@@ -9,8 +9,7 @@ import { isClassPassed } from '../utils/dateUtils';
 
 /*
   Modern profile-style card component with like functionality.
-  Features clean layout with icon avatar, prominent subject title, and like counter.
-  Cards are disabled when the class time has passed.
+  Optimized for compact layout with better space management.
 */
 
 interface ScheduleCardProps {
@@ -36,40 +35,40 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
       className={`relative group ${passed ? 'pointer-events-none' : ''}`}
     >
       {/* Main Card */}
-      <div className={`bg-white rounded-3xl shadow-lg border border-slate-200/80 transition-all duration-300 overflow-hidden ${
+      <div className={`bg-white rounded-2xl shadow-lg border border-slate-200/80 transition-all duration-300 overflow-hidden ${
         passed 
           ? 'opacity-50 grayscale' 
           : 'hover:shadow-xl hover:border-blue-200/60'
       }`}>
         
         {/* Content */}
-        <div className="p-6">
-          {/* Header Section - Profile Style */}
-          <div className="flex items-start gap-4 mb-5">
-            {/* Icon Avatar */}
-            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-blue-200 shrink-0 ${
+        <div className="p-4">
+          {/* Header Section - Compact */}
+          <div className="flex items-start gap-3 mb-3">
+            {/* Icon Avatar - Smaller */}
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-md shadow-blue-200 shrink-0 ${
               passed ? 'opacity-60' : ''
             }`}>
               {session.category === 'Law' ? (
-                <GraduationCap className="w-8 h-8" />
+                <GraduationCap className="w-6 h-6" />
               ) : (
-                <BookOpen className="w-8 h-8" />
+                <BookOpen className="w-6 h-6" />
               )}
             </div>
 
-            {/* Subject and Info */}
+            {/* Subject and Info - Compact */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2 mb-1.5">
-                <h3 className={`text-xl font-bold leading-tight flex-1 ${
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <h3 className={`text-lg font-bold leading-tight flex-1 line-clamp-2 ${
                   passed ? 'text-slate-400' : 'text-slate-900'
                 }`}>
                   {session.subject}
                 </h3>
-                {/* Like Button - Disabled when passed */}
+                {/* Like Button */}
                 {!passed && (
                   <button
                     onClick={toggleLike}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-200 shrink-0 ${
+                    className={`flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-200 shrink-0 ${
                       isLiked
                         ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
                         : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
@@ -80,82 +79,85 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
                       transition={{ duration: 0.3 }}
                     >
                       <Heart 
-                        className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`}
+                        className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`}
                       />
                     </motion.div>
                     {likes > 0 && (
-                      <span className="text-xs font-bold">{likes}</span>
+                      <span className="text-[10px] font-bold">{likes}</span>
                     )}
                   </button>
                 )}
               </div>
-              <p className={`text-sm font-medium mb-3 ${
-                passed ? 'text-slate-400' : 'text-slate-600'
-              }`}>
-                {session.professor}
-              </p>
               
-              {/* Time and Location Row */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className={`flex items-center gap-1.5 ${
+              {/* Professor - Inline with time/location */}
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <div className={`flex items-center gap-1 text-xs ${
+                  passed ? 'text-slate-400' : 'text-slate-600'
+                }`}>
+                  <User className="w-3 h-3" />
+                  <span className="font-medium">{session.professor}</span>
+                </div>
+              </div>
+              
+              {/* Time and Location - Compact Row */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className={`flex items-center gap-1 text-xs ${
                   passed ? 'text-slate-400' : 'text-blue-600'
                 }`}>
-                  <Clock className="w-4 h-4" />
-                  <span className="text-sm font-semibold">{session.time}</span>
+                  <Clock className="w-3 h-3" />
+                  <span className="font-semibold">{session.time}</span>
                 </div>
-                <div className={`flex items-center gap-1.5 ${
+                <span className="text-slate-300">•</span>
+                <div className={`flex items-center gap-1 text-xs ${
                   passed ? 'text-slate-400' : 'text-slate-500'
                 }`}>
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-sm font-medium">{session.location}</span>
+                  <MapPin className="w-3 h-3" />
+                  <span className="font-medium truncate max-w-[120px]">{session.location}</span>
                 </div>
+                {session.room && (
+                  <>
+                    <span className="text-slate-300">•</span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                      passed 
+                        ? 'bg-slate-50 text-slate-400' 
+                        : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      قاعة {session.room}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="h-px bg-slate-100 mb-4"></div>
-
-          {/* Details Section */}
-          <div className="space-y-3 mb-4">
-            {/* Date */}
-            <div className={`flex items-center gap-2 ${
+          {/* Bottom Section - Date and Tags in one row */}
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            <div className={`flex items-center gap-1.5 text-xs ${
               passed ? 'text-slate-400' : 'text-slate-500'
             }`}>
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm font-medium">{session.date}</span>
+              <Calendar className="w-3 h-3" />
+              <span className="font-medium">{session.date}</span>
             </div>
-
-            {/* Room if available */}
-            {session.room && (
-              <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold border ${
+            
+            {/* Category Tags - Compact */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                 passed 
                   ? 'bg-slate-50 text-slate-400 border-slate-200' 
-                  : 'bg-slate-100 text-slate-700 border-slate-200'
+                  : categoryColor
               }`}>
-                القاعة {session.room}
+                {categoryLabel}
               </div>
-            )}
-          </div>
-
-          {/* Category Tags - Bottom Section */}
-          <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-slate-100">
-            <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border ${
-              passed 
-                ? 'bg-slate-50 text-slate-400 border-slate-200' 
-                : categoryColor
-            }`}>
-              {categoryLabel}
+              {session.isNextWeek && (
+                <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                  passed 
+                    ? 'bg-slate-50 text-slate-400 border-slate-200' 
+                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                }`}>
+                  الأسبوع المقبل
+                </div>
+              )}
             </div>
-            {session.isNextWeek && (
-              <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border ${
-                passed 
-                  ? 'bg-slate-50 text-slate-400 border-slate-200' 
-                  : 'bg-amber-50 text-amber-700 border-amber-200'
-              }`}>
-                الأسبوع المقبل
-              </div>
-            )}
           </div>
         </div>
       </div>

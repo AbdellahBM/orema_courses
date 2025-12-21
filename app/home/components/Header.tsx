@@ -20,16 +20,14 @@ export default function Header() {
           transition={{ duration: 0.5 }}
           className="flex flex-col items-center"
         >
-           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg shadow-blue-100/50 p-2">
-             <Image
-               src="/اللوغو فقط.png"
-               alt="شعار المنظمة"
-               width={56}
-               height={56}
-               className="object-contain"
-               priority
-             />
-           </div>
+           <Image
+             src="/اللوغو فقط.png"
+             alt="شعار المنظمة"
+             width={80}
+             height={80}
+             className="object-contain"
+             priority
+           />
         </motion.div>
         
         {/* Title */}
@@ -43,23 +41,23 @@ export default function Header() {
            <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-300 text-blue-900 text-[10px] font-bold px-3 py-1 rounded-full mt-2 shadow-md transform -rotate-2">
              مجاناً - FREE
            </div>
-           <p className="text-[10px] text-slate-500 mt-2 font-bold tracking-wide uppercase">EST 2025</p>
+           <p className="text-[10px] text-slate-500 mt-2 font-bold tracking-wide">طنجة 2025</p>
         </motion.div>
 
-        {/* Event Logo - Using same logo for now, can be updated later */}
+        {/* Event Logo */}
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
           className="flex flex-col items-center"
         >
-           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg shadow-yellow-100/50 p-2">
+           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg shadow-yellow-100/50 overflow-hidden">
              <Image
-               src="/اللوغو فقط.png"
+               src="/image copy.png"
                alt="شعار الحدث"
-               width={56}
-               height={56}
-               className="object-contain"
+               width={85}
+               height={85}
+               className="object-cover scale-110"
                priority
              />
            </div>

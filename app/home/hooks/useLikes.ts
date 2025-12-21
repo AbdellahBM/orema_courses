@@ -4,60 +4,92 @@ import { useState, useEffect } from 'react';
 
 /*
   Custom hook to manage likes for class sessions.
-  Stores likes in localStorage and persists across page refreshes.
+  Fetches likes from server API and updates them persistently.
+  Uses optimistic updates for better UX.
 */
-
-const STORAGE_KEY = 'class-likes';
 
 export function useLikes(classId: string) {
   const [likes, setLikes] = useState<number>(0);
   const [isLiked, setIsLiked] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load likes from localStorage on mount
+  // Load likes from server on mount
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const data = JSON.parse(stored);
-        setLikes(data[classId]?.count || 0);
-        setIsLiked(data[classId]?.liked || false);
+    const fetchLikes = async () => {
+      try {
+        const response = await fetch('/api/likes');
+        const data = await response.json();
+        const count = data.likes?.[classId] || 0;
+        setLikes(count);
+        
+        // Check if user has liked (stored in localStorage for user-specific state)
+        if (typeof window !== 'undefined') {
+          const userLikes = localStorage.getItem('user-likes');
+          if (userLikes) {
+            const userLikesData = JSON.parse(userLikes);
+            setIsLiked(userLikesData[classId] || false);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching likes:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading likes:', error);
-    }
+    };
+
+    fetchLikes();
   }, [classId]);
 
-  const toggleLike = () => {
-    if (typeof window === 'undefined') return;
+  const toggleLike = async () => {
+    // Optimistic update
+    const previousLikes = likes;
+    const previousIsLiked = isLiked;
+    
+    if (isLiked) {
+      setLikes(Math.max(0, likes - 1));
+      setIsLiked(false);
+    } else {
+      setLikes(likes + 1);
+      setIsLiked(true);
+    }
+
+    // Update user's like state in localStorage
+    if (typeof window !== 'undefined') {
+      const userLikes = localStorage.getItem('user-likes');
+      const userLikesData = userLikes ? JSON.parse(userLikes) : {};
+      userLikesData[classId] = !isLiked;
+      localStorage.setItem('user-likes', JSON.stringify(userLikesData));
+    }
 
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      const data = stored ? JSON.parse(stored) : {};
+      const response = await fetch('/api/likes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classId,
+          action: isLiked ? 'unlike' : 'like',
+        }),
+      });
 
-      if (!data[classId]) {
-        data[classId] = { count: 0, liked: false };
-      }
+      const data = await response.json();
 
-      if (data[classId].liked) {
-        // Unlike
-        data[classId].count = Math.max(0, data[classId].count - 1);
-        data[classId].liked = false;
+      if (data.success) {
+        // Update with server response
+        setLikes(data.count);
       } else {
-        // Like
-        data[classId].count = (data[classId].count || 0) + 1;
-        data[classId].liked = true;
+        // Revert on error
+        setLikes(previousLikes);
+        setIsLiked(previousIsLiked);
       }
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      setLikes(data[classId].count);
-      setIsLiked(data[classId].liked);
     } catch (error) {
-      console.error('Error saving likes:', error);
+      console.error('Error updating like:', error);
+      // Revert on error
+      setLikes(previousLikes);
+      setIsLiked(previousIsLiked);
     }
   };
 
-  return { likes, isLiked, toggleLike };
+  return { likes, isLiked, toggleLike, isLoading };
 }
-

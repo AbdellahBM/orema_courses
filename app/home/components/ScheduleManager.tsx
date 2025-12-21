@@ -83,13 +83,13 @@ export default function ScheduleManager() {
         />
       </div>
 
-      {/* Day Tabs */}
-      <div className="mb-8 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
-        <div className="flex space-x-3 space-x-reverse min-w-max">
+      {/* Day Tabs - Scrollable */}
+      <div className="mb-8 overflow-x-auto pb-2 scrollbar-hide day-tabs-scroll -mx-4 px-4 snap-x snap-mandatory">
+        <div className="flex gap-2 min-w-max">
           <button
             onClick={() => setSelectedDay('All')}
             className={`
-              flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all duration-300
+              flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all duration-300 snap-start shrink-0
               ${selectedDay === 'All' 
                 ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/30 scale-105' 
                 : 'bg-white text-gray-500 hover:bg-gray-50 shadow-sm border border-gray-100'}
@@ -106,7 +106,7 @@ export default function ScheduleManager() {
                 key={day}
                 onClick={() => setSelectedDay(day)}
                 className={`
-                  flex flex-col items-center justify-center px-5 py-2 rounded-2xl transition-all duration-300
+                  flex flex-col items-center justify-center px-5 py-2 rounded-2xl transition-all duration-300 snap-start shrink-0
                   ${dayPassed ? 'opacity-50' : ''}
                   ${selectedDay === day 
                     ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/30 scale-105' 
