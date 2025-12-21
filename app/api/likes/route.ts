@@ -123,7 +123,8 @@ async function getLikesFromGist(): Promise<Record<string, number>> {
 }
 
 // Save likes to GitHub Gist
-async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> {
+// action and classId are optional and used for conflict resolution
+async function saveLikesToGist(likes: Record<string, number>, action?: 'like' | 'unlike', classId?: string): Promise<boolean> {
   try {
     // First try environment variable, then cached, then search for existing
     let gistId: string | null = GIST_ID || cachedGistId || null;
@@ -183,6 +184,8 @@ async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> 
     } else {
       // Update existing Gist with retry logic for conflicts
       let retries = 3;
+      let currentLikes = { ...likes }; // Work with a copy
+      
       while (retries > 0) {
         const updateResponse = await fetch(`https://api.github.com/gists/${gistId}`, {
           method: 'PATCH',
@@ -194,20 +197,40 @@ async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> 
           body: JSON.stringify({
             files: {
               [GIST_FILENAME]: {
-                content: JSON.stringify(likes, null, 2),
+                content: JSON.stringify(currentLikes, null, 2),
               },
             },
           }),
         });
 
         if (updateResponse.ok) {
+          // Success - update in-memory cache
+          inMemoryLikes = { ...currentLikes };
           return true;
         }
 
         // Handle 409 conflict - another instance updated, retry with fresh data
         if (updateResponse.status === 409 && retries > 1) {
-          // Wait a bit and retry
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Wait a bit, read fresh data, and retry
+          await new Promise(resolve => setTimeout(resolve, 300));
+          // Read fresh likes from Gist before retrying
+          const freshLikes = await getLikesFromGist();
+          // Merge: keep all existing likes, but ensure our change is applied
+          // This handles the case where multiple devices like simultaneously
+          currentLikes = { ...freshLikes };
+          // Re-apply the increment/decrement to the fresh count
+          if (action && classId) {
+            const freshCount = freshLikes[classId] || 0;
+            // Apply the same action to the fresh count
+            if (action === 'like') {
+              currentLikes[classId] = freshCount + 1;
+            } else {
+              currentLikes[classId] = Math.max(0, freshCount - 1);
+            }
+          } else {
+            // If we don't have action/classId, just use the fresh data (shouldn't happen in normal flow)
+            currentLikes = { ...freshLikes };
+          }
           retries--;
           continue;
         }
@@ -216,7 +239,7 @@ async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> 
         if (updateResponse.status === 404) {
           cachedGistId = '';
           // Try to find existing or will create new one on next attempt
-          return await saveLikesToGist(likes);
+          return await saveLikesToGist(currentLikes);
         }
 
         throw new Error(`Failed to update Gist: ${updateResponse.status}`);
@@ -230,17 +253,18 @@ async function saveLikesToGist(likes: Record<string, number>): Promise<boolean> 
   }
 }
 
-// Read likes (Abstracted)
+// Read likes (Abstracted) - ALWAYS read fresh from Gist, never use in-memory fallback
 async function getLikes(): Promise<Record<string, number>> {
   if (useGist) {
+    // Always read fresh from Gist to ensure consistency across devices
     const likes = await getLikesFromGist();
+    // Update in-memory cache for reference, but always return Gist data
     if (Object.keys(likes).length > 0) {
-      // Update in-memory cache
       inMemoryLikes = { ...likes };
       return likes;
     }
-    // If empty from Gist, return in-memory if available
-    return Object.keys(inMemoryLikes).length > 0 ? inMemoryLikes : {};
+    // If Gist is empty, return empty (don't use in-memory fallback)
+    return {};
   } else {
     // In-memory only (development mode)
     return inMemoryLikes;
@@ -248,12 +272,13 @@ async function getLikes(): Promise<Record<string, number>> {
 }
 
 // Save likes (Abstracted)
-async function saveLikes(likes: Record<string, number>): Promise<boolean> {
+// action and classId are optional and used for conflict resolution
+async function saveLikes(likes: Record<string, number>, action?: 'like' | 'unlike', classId?: string): Promise<boolean> {
   // Always update in-memory cache first
   inMemoryLikes = { ...likes };
 
   if (useGist) {
-    const success = await saveLikesToGist(likes);
+    const success = await saveLikesToGist(likes, action, classId);
     if (!success) {
       // If Gist fails, at least we have in-memory cache
       console.warn('Failed to save to Gist, using in-memory cache only');
@@ -300,8 +325,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current likes
-    const likes = await getLikes();
+    // CRITICAL: Always read fresh from Gist to avoid race conditions
+    // Read current likes directly from Gist (bypassing any cache)
+    let likes: Record<string, number>;
+    if (useGist) {
+      // Read fresh from Gist to get the latest count
+      likes = await getLikesFromGist();
+    } else {
+      likes = inMemoryLikes;
+    }
+    
     const currentCount = likes[classId] || 0;
     
     // Update count
@@ -311,13 +344,23 @@ export async function POST(request: NextRequest) {
       likes[classId] = Math.max(0, currentCount - 1);
     }
 
-    // Save updated likes
-    await saveLikes(likes);
-    const nextCount = likes[classId];
+    // Save updated likes to Gist (this will handle conflicts with retry logic)
+    // Pass action and classId for proper conflict resolution
+    const saveSuccess = await saveLikes(likes, action, classId);
+    
+    // After saving, always read fresh from Gist to get the actual count
+    // This ensures consistency across devices
+    let finalCount: number;
+    if (useGist && saveSuccess) {
+      const freshLikes = await getLikesFromGist();
+      finalCount = freshLikes[classId] ?? likes[classId];
+    } else {
+      finalCount = likes[classId];
+    }
 
     const res = NextResponse.json({
-      success: true,
-      count: nextCount,
+      success: saveSuccess,
+      count: finalCount,
     });
     res.headers.set('Cache-Control', 'no-store, max-age=0');
     return res;
