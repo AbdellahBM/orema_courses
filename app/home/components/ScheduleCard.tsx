@@ -29,7 +29,7 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: passed ? 0.5 : 1, y: 0 }}
+      animate={{ opacity: passed ? 0.85 : 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.4 }}
       whileHover={passed ? {} : { y: -4, scale: 1.01 }}
       className={`relative group ${passed ? 'pointer-events-none' : ''}`}
@@ -37,7 +37,7 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
       {/* Main Card */}
       <div className={`bg-white rounded-2xl shadow-lg border border-slate-200/80 transition-all duration-300 overflow-hidden ${
         passed 
-          ? 'opacity-50 grayscale' 
+          ? 'opacity-85 grayscale' 
           : 'hover:shadow-xl hover:border-blue-200/60'
       }`}>
         

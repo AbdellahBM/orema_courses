@@ -76,11 +76,7 @@ export const scheduleData: ClassSession[] = [
     category: "Law",
   },
 
-  // Saturday (Next Week) - Jan 3, 2026 (Assuming "Next Week" means the following week's Saturday)
-  // If meant Dec 27, it would usually say "this Saturday". 
-  // Given user text "Fiscalité يوم السبت (الأسبوع المقبل)", we'll put it comfortably ahead or distinct.
-  // Let's use Dec 27 as "This coming Saturday" if the week starts 22nd, but label it "Next Week" as per text if it is indeed Jan 3.
-  // Use Jan 3, 2026 to be safe with "Next Week".
+  // Saturday (Next Week) - Jan 3, 2026
   {
     id: "7",
     subject: "Fiscalité",

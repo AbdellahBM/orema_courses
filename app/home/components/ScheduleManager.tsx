@@ -107,7 +107,7 @@ export default function ScheduleManager() {
                 onClick={() => setSelectedDay(day)}
                 className={`
                   flex flex-col items-center justify-center px-5 py-2 rounded-2xl transition-all duration-300 snap-start shrink-0
-                  ${dayPassed ? 'opacity-50' : ''}
+                  ${dayPassed ? 'opacity-85' : ''}
                   ${selectedDay === day 
                     ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/30 scale-105' 
                     : 'bg-white text-gray-500 hover:bg-gray-50 shadow-sm border border-gray-100'}
