@@ -8,12 +8,12 @@ import { ClassSession } from "./types";
 */
 
 export const scheduleData: ClassSession[] = [
-  // Monday - Dec 22, 2025
+  // Tuesday - Dec 23, 2025
   {
     id: "1",
     subject: "Histoire de la pensée économique",
-    day: "الإثنين",
-    date: "2025-12-22",
+    day: "الثلاثاء",
+    date: "2025-12-23",
     time: "10:00",
     location: "ملحقة 1",
     room: "1",
