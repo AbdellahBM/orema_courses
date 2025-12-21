@@ -294,7 +294,15 @@ async function saveLikes(likes: Record<string, number>, action?: 'like' | 'unlik
 
 export async function GET() {
   try {
+    // Always read fresh from Gist to ensure consistency
     const likes = await getLikes();
+    
+    // Log for debugging (only in production)
+    if (process.env.NODE_ENV === 'production' && useGist) {
+      const gistId = GIST_ID || cachedGistId || 'not-found';
+      console.log(`GET /api/likes - Gist ID: ${gistId}, Likes count: ${Object.keys(likes).length}`);
+    }
+    
     const res = NextResponse.json({ likes });
     res.headers.set('Cache-Control', 'no-store, max-age=0');
     return res;
@@ -331,8 +339,12 @@ export async function POST(request: NextRequest) {
     if (useGist) {
       // Read fresh from Gist to get the latest count
       likes = await getLikesFromGist();
+      
+      // Log for debugging
+      const gistId = GIST_ID || cachedGistId || 'not-found';
+      console.log(`POST /api/likes - Before: classId=${classId}, action=${action}, currentCount=${likes[classId] || 0}, Gist ID: ${gistId}`);
     } else {
-      likes = inMemoryLikes;
+      likes = { ...inMemoryLikes };
     }
     
     const currentCount = likes[classId] || 0;
@@ -351,9 +363,11 @@ export async function POST(request: NextRequest) {
     // After saving, always read fresh from Gist to get the actual count
     // This ensures consistency across devices
     let finalCount: number;
-    if (useGist && saveSuccess) {
+    if (useGist) {
+      // Always read fresh after save to ensure we return the correct count
       const freshLikes = await getLikesFromGist();
       finalCount = freshLikes[classId] ?? likes[classId];
+      console.log(`POST /api/likes - After: classId=${classId}, finalCount=${finalCount}, saveSuccess=${saveSuccess}`);
     } else {
       finalCount = likes[classId];
     }
