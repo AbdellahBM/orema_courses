@@ -1,0 +1,96 @@
+import { ClassSession } from "./types";
+
+/*
+  Data for the class schedule.
+  Contains the list of support classes for the week with precise ISO dates.
+  Base start date: Monday, Dec 22, 2025.
+*/
+
+export const scheduleData: ClassSession[] = [
+  // Monday - Dec 22, 2025
+  {
+    id: "1",
+    subject: "Histoire de la pensée économique",
+    day: "الإثنين",
+    date: "2025-12-22",
+    time: "10:00",
+    location: "ملحقة 1",
+    room: "1",
+    professor: "الأستاذ محمد بويردن",
+    category: "Economics",
+  },
+  {
+    id: "2",
+    subject: "النظرية العامة للقانون الدستوري",
+    day: "الإثنين",
+    date: "2025-12-22",
+    time: "12:00",
+    location: "كلية الحقوق المركز بوخالف",
+    room: "5",
+    professor: "الأستاذ إبراهيم الصمدي",
+    category: "Law",
+  },
+  {
+    id: "3",
+    subject: "Contrôle de gestion",
+    day: "الإثنين",
+    date: "2025-12-22",
+    time: "13:00",
+    location: "ملحقة 1",
+    professor: "الأستاذة هدى السبيطي",
+    category: "Economics",
+  },
+  {
+    id: "4",
+    subject: "المواريث",
+    day: "الإثنين",
+    date: "2025-12-22",
+    time: "14:00",
+    location: "كلية الحقوق المركز بوخالف",
+    room: "5",
+    professor: "الأستاذ عبد النور الأندلسي",
+    category: "Law",
+  },
+  
+  // Tuesday - Dec 23, 2025
+  {
+    id: "5",
+    subject: "Comptabilité approfondie",
+    day: "الثلاثاء",
+    date: "2025-12-23",
+    time: "10:00",
+    location: "ملحقة 1",
+    room: "2",
+    professor: "الأستاذ زكرياء الوردي",
+    category: "Economics",
+  },
+  {
+    id: "6",
+    subject: "مدخل إلى دراسة القانون",
+    day: "الثلاثاء",
+    date: "2025-12-23",
+    time: "12:00",
+    location: "كلية الحقوق المركز بوخالف",
+    room: "6",
+    professor: "الأستاذ محمد المثيوي",
+    category: "Law",
+  },
+
+  // Saturday (Next Week) - Jan 3, 2026 (Assuming "Next Week" means the following week's Saturday)
+  // If meant Dec 27, it would usually say "this Saturday". 
+  // Given user text "Fiscalité يوم السبت (الأسبوع المقبل)", we'll put it comfortably ahead or distinct.
+  // Let's use Dec 27 as "This coming Saturday" if the week starts 22nd, but label it "Next Week" as per text if it is indeed Jan 3.
+  // Use Jan 3, 2026 to be safe with "Next Week".
+  {
+    id: "7",
+    subject: "Fiscalité",
+    day: "السبت",
+    date: "2026-01-03", 
+    time: "10:00",
+    location: "ملحقة 1",
+    room: "2",
+    professor: "الأستاذ صهيب الحداد",
+    isNextWeek: true,
+    category: "Economics",
+  },
+];

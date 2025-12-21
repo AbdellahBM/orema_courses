@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/*
+  Global styles for the application.
+  Defines the custom theme colors and font integration.
+*/
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+@theme {
+  --font-sans: var(--font-cairo), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  
+  /* Brand Colors */
+  --color-brand-blue: #0f4c81;
+  --color-brand-gold: #d4af37;
+  --color-brand-light: #e6f0fa;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
