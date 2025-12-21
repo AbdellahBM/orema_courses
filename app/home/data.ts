@@ -19,7 +19,6 @@ export const scheduleData: ClassSession[] = [
     room: "1",
     professor: "الأستاذ محمد بويردن",
     category: "Economics",
-    notConfirmed: true,
     initialLikes: 0,
   },
   {
