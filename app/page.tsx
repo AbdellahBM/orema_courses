@@ -3,6 +3,7 @@ import ScheduleManager from './home/components/ScheduleManager';
 import BackgroundTexture from './home/components/BackgroundTexture';
 import WhatsAppButton from './home/components/WhatsAppButton';
 import InstagramButton from './home/components/InstagramButton';
+import AboutUsButton from './home/components/AboutUsButton';
 
 /*
   Main Page component.
@@ -23,6 +24,7 @@ export default function Home() {
       </div>
       
       {/* Social Media Buttons */}
+      <AboutUsButton />
       <WhatsAppButton />
       <InstagramButton />
       

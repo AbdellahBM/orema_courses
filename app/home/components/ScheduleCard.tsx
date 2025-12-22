@@ -34,7 +34,7 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: passed ? 0.85 : 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.4 }}
-      whileHover={passed ? {} : { y: -4, scale: 1.01 }}
+      whileTap={passed ? {} : { scale: 0.98 }}
       className={`relative group ${passed ? 'pointer-events-none' : ''}`}
     >
       {/* Main Card */}
@@ -42,8 +42,8 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
         passed 
           ? 'opacity-85 grayscale' 
           : session.category === 'Law' 
-            ? 'hover:shadow-xl hover:border-blue-200/60' 
-            : 'hover:shadow-xl hover:border-yellow-300/60'
+            ? 'active:shadow-xl active:border-blue-200/60' 
+            : 'active:shadow-xl active:border-yellow-300/60'
       }`}>
         
         {/* Content */}
@@ -86,8 +86,8 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
                     onClick={toggleLike}
                     className={`flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-200 shrink-0 ${
                       isLiked
-                        ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
-                        : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
+                        ? 'bg-red-50 text-red-600 border border-red-200 active:bg-red-100'
+                        : 'bg-slate-50 text-slate-500 border border-slate-200 active:bg-slate-100'
                     }`}
                   >
                     <motion.div

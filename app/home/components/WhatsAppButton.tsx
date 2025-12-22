@@ -33,14 +33,14 @@ export default function WhatsAppButton() {
       transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
-      className="fixed bottom-16 left-4 z-30 bg-blue-900/90 hover:bg-blue-800/90 text-white rounded-full shadow-md shadow-blue-500/30 p-2.5 flex items-center gap-2 group transition-all duration-300"
+      className="fixed bottom-16 left-4 z-30 bg-blue-900/90 active:bg-blue-800/90 text-white rounded-full shadow-md shadow-blue-500/30 p-2.5 flex items-center gap-2 transition-all duration-300"
       aria-label="انضم إلى مجموعة واتساب للمزيد من المعلومات"
     >
       {/* WhatsApp Icon */}
       <WhatsAppIcon />
       
-      {/* Text Label */}
-      <span className="text-xs font-semibold whitespace-nowrap hidden sm:block group-hover:block bg-white/10 px-2 py-0.5 rounded-full">
+      {/* Text Label - hidden on mobile, visible on larger screens */}
+      <span className="text-xs font-semibold whitespace-nowrap hidden sm:block bg-white/10 px-2 py-0.5 rounded-full">
         للمزيد من المعلومات
       </span>
     </motion.a>

@@ -69,7 +69,7 @@ export default function ScheduleManager() {
   };
 
   return (
-    <div className="px-4 pb-20 max-w-md mx-auto relative z-10">
+    <div className="px-4 pb-32 max-w-md mx-auto relative z-10">
       
       {/* Search Bar */}
       <div className="mb-6 relative">
@@ -94,7 +94,7 @@ export default function ScheduleManager() {
               flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all duration-300 snap-start shrink-0
               ${selectedDay === 'All' 
                 ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/30 scale-105' 
-                : 'bg-white text-gray-500 hover:bg-gray-50 shadow-sm border border-gray-100'}
+                : 'bg-white text-gray-500 active:bg-gray-50 shadow-sm border border-gray-100'}
             `}
           >
             <span className="text-sm font-bold">الكل</span>
@@ -112,7 +112,7 @@ export default function ScheduleManager() {
                   ${dayPassed ? 'opacity-85' : ''}
                   ${selectedDay === day 
                     ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/30 scale-105' 
-                    : 'bg-white text-gray-500 hover:bg-gray-50 shadow-sm border border-gray-100'}
+                    : 'bg-white text-gray-500 active:bg-gray-50 shadow-sm border border-gray-100'}
                 `}
               >
                 <span className="text-sm font-bold">{day}</span>
@@ -124,7 +124,7 @@ export default function ScheduleManager() {
       </div>
 
       {/* Results */}
-      <div className="space-y-6">
+      <div className="space-y-6 pb-32">
         <AnimatePresence mode="popLayout">
           {filteredSessions.length > 0 ? (
             filteredSessions.map((session, index) => (

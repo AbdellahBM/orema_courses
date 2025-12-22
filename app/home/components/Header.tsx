@@ -23,8 +23,8 @@ export default function Header() {
            <Image
              src="/اللوغو فقط.png"
              alt="شعار المنظمة"
-             width={80}
-             height={80}
+             width={70}
+             height={70}
              className="object-contain"
              priority
            />
@@ -37,7 +37,7 @@ export default function Header() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="text-center flex-1 mx-2"
         >
-           <h1 className="text-3xl font-black text-blue-900 leading-none tracking-tight">حصص الدعم</h1>
+           <h1 className="text-3xl font-black text-blue-900 leading-none tracking-tight" style={{ fontFamily: 'var(--font-cairo)' }}>حصص الدعم</h1>
            <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-300 text-blue-900 text-[10px] font-bold px-3 py-1 rounded-full mt-2 shadow-md transform -rotate-2">
              مجاناً - FREE
            </div>
@@ -53,7 +53,7 @@ export default function Header() {
         >
            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg shadow-yellow-100/50 overflow-hidden">
              <Image
-               src="/image copy.png"
+               src="/logo-fsjest-copie-copie.png"
                alt="شعار الحدث"
                width={85}
                height={85}
