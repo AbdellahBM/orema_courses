@@ -98,6 +98,20 @@ export const scheduleData: ClassSession[] = [
     initialLikes: 0,
   },
 
+  // Thursday - Dec 25, 2025
+  {
+    id: "9",
+    subject: "probabilité",
+    day: "الخميس",
+    date: "2025-12-25",
+    time: "10:00",
+    location: "ملحقة 1",
+    room: "2",
+    professor: "الأستاذ بلال الصبار",
+    category: "Economics",
+    initialLikes: 0,
+  },
+
   // Saturday - Jan 27, 2026
   {
     id: "7",
