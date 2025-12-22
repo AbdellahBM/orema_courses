@@ -85,41 +85,47 @@ export default function ScheduleManager() {
         />
       </div>
 
-      {/* Day Tabs - Scrollable */}
-      <div className="mb-8 overflow-x-auto pb-2 scrollbar-hide day-tabs-scroll -mx-4 px-4 snap-x snap-mandatory">
-        <div className="flex gap-2 min-w-max">
-          <button
-            onClick={() => setSelectedDay('All')}
-            className={`
-              flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all duration-300 snap-start shrink-0
-              ${selectedDay === 'All' 
-                ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/30 scale-105' 
-                : 'bg-white text-gray-500 active:bg-gray-50 shadow-sm border border-gray-100'}
-            `}
-          >
-            <span className="text-sm font-bold">الكل</span>
-            <span className="text-[10px] opacity-80 mt-1">جميع الأيام</span>
-          </button>
+      {/* Day Tabs - Fixed "All" button + Scrollable Days */}
+      <div className="mb-8 flex gap-2 items-start -mx-4 px-4">
+        {/* Fixed "All" Button */}
+        <motion.button
+          onClick={() => setSelectedDay('All')}
+          whileTap={{ scale: 0.95 }}
+          className={`
+            flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all duration-300 shrink-0
+            ${selectedDay === 'All' 
+              ? 'bg-blue-900 text-white scale-105' 
+              : 'bg-white text-gray-500 border border-gray-100'}
+          `}
+        >
+          <span className="text-sm font-bold">الكل</span>
+          <span className="text-[10px] opacity-80 mt-1">جميع الأيام</span>
+        </motion.button>
 
-          {days.map(({ day, date }) => {
-            const dayPassed = isDayPassed(day);
-            return (
-              <button
-                key={day}
-                onClick={() => setSelectedDay(day)}
-                className={`
-                  flex flex-col items-center justify-center px-5 py-2 rounded-2xl transition-all duration-300 snap-start shrink-0
-                  ${dayPassed ? 'opacity-85' : ''}
-                  ${selectedDay === day 
-                    ? 'bg-blue-900 text-white shadow-lg shadow-blue-900/30 scale-105' 
-                    : 'bg-white text-gray-500 active:bg-gray-50 shadow-sm border border-gray-100'}
-                `}
-              >
-                <span className="text-sm font-bold">{day}</span>
-                <span className="text-[10px] opacity-80 mt-1">{formatDate(date)}</span>
-              </button>
-            );
-          })}
+        {/* Scrollable Days Container */}
+        <div className="flex-1 overflow-x-auto pb-2 scrollbar-hide day-tabs-scroll snap-x snap-mandatory">
+          <div className="flex gap-2 min-w-max">
+            {days.map(({ day, date }) => {
+              const dayPassed = isDayPassed(day);
+              return (
+                <motion.button
+                  key={day}
+                  onClick={() => setSelectedDay(day)}
+                  whileTap={{ scale: 0.95 }}
+                  className={`
+                    flex flex-col items-center justify-center px-5 py-2 rounded-2xl transition-all duration-300 snap-start shrink-0
+                    ${dayPassed ? 'opacity-85' : ''}
+                    ${selectedDay === day 
+                      ? 'bg-blue-900 text-white scale-105' 
+                      : 'bg-white text-gray-500 border border-gray-100'}
+                  `}
+                >
+                  <span className="text-sm font-bold">{day}</span>
+                  <span className="text-[10px] opacity-80 mt-1">{formatDate(date)}</span>
+                </motion.button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
