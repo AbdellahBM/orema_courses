@@ -14,7 +14,7 @@ export const scheduleData: ClassSession[] = [
     subject: "Histoire de la pensée économique",
     day: "الثلاثاء",
     date: "2025-12-23",
-    time: "10:00",
+    time: "12:00",
     location: "ملحقة 1",
     room: "1",
     professor: "الأستاذ محمد بويردن",

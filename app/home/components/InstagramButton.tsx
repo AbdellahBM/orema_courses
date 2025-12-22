@@ -33,7 +33,7 @@ export default function InstagramButton() {
       transition={{ delay: 0.7, type: 'spring', stiffness: 200 }}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
-      className="fixed bottom-28 left-4 z-30 bg-gradient-to-r from-yellow-400/90 to-yellow-300/90 hover:from-yellow-500/95 hover:to-yellow-400/95 text-blue-900 rounded-full shadow-md shadow-yellow-500/30 p-2.5 flex items-center gap-2 group transition-all duration-300"
+      className="fixed bottom-28 left-4 z-30 bg-gradient-to-r from-yellow-400/90 to-yellow-300/90 hover:from-yellow-500/95 hover:to-yellow-400/95 text-white rounded-full shadow-md shadow-yellow-500/30 p-2.5 flex items-center gap-2 group transition-all duration-300"
       aria-label="زيارة صفحة الإنستغرام"
     >
       {/* Instagram Icon */}
