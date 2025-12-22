@@ -111,6 +111,18 @@ export const scheduleData: ClassSession[] = [
     category: "Economics",
     initialLikes: 0,
   },
+  {
+    id: "10",
+    subject: "قانون المواريث والحقول المالية",
+    day: "الخميس",
+    date: "2025-12-25",
+    time: "14:00",
+    location: "كلية الحقوق المركز بوخالف",
+    room: "5",
+    professor: "الأستاذ عبد النور الأندلسي",
+    category: "Law",
+    initialLikes: 0,
+  },
 
   // Saturday - Jan 27, 2026
   {
