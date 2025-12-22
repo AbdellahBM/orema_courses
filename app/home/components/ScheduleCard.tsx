@@ -25,7 +25,7 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
   const categoryLabel = session.category === 'Law' ? 'قانون' : 'اقتصاد';
   const categoryColor = session.category === 'Law' 
     ? 'bg-blue-50 text-blue-700 border-blue-200' 
-    : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    : 'bg-yellow-50 text-yellow-800 border-yellow-300';
   
   const passed = isClassPassed(session.date, session.time);
 
@@ -41,7 +41,9 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
       <div className={`bg-white rounded-2xl shadow-lg border border-slate-200/80 transition-all duration-300 overflow-hidden ${
         passed 
           ? 'opacity-85 grayscale' 
-          : 'hover:shadow-xl hover:border-blue-200/60'
+          : session.category === 'Law' 
+            ? 'hover:shadow-xl hover:border-blue-200/60' 
+            : 'hover:shadow-xl hover:border-yellow-300/60'
       }`}>
         
         {/* Content */}
@@ -49,7 +51,11 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
           {/* Header Section - Compact */}
           <div className="flex items-start gap-3 mb-3">
             {/* Icon Avatar - Smaller */}
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-md shadow-blue-200 shrink-0 ${
+            <div className={`w-12 h-12 rounded-xl ${
+              session.category === 'Law' 
+                ? 'bg-gradient-to-br from-blue-600 to-blue-700 shadow-md shadow-blue-200 text-white' 
+                : 'bg-yellow-400 shadow-md shadow-yellow-200 text-white'
+            } flex items-center justify-center shrink-0 ${
               passed ? 'opacity-60' : ''
             }`}>
               {session.category === 'Law' ? (
@@ -113,25 +119,25 @@ export default function ScheduleCard({ session, index }: ScheduleCardProps) {
               {/* Time and Location - Compact Row */}
               <div className="flex items-center gap-2 flex-wrap">
                 <div className={`flex items-center gap-1 text-xs ${
-                  passed ? 'text-slate-400' : 'text-blue-600'
+                  passed ? 'text-slate-400' : 'text-green-600'
                 }`}>
-                  <Clock className="w-3 h-3" />
+                  <Clock className="w-3 h-3 shrink-0" />
                   <span className="font-semibold">{session.time}</span>
                 </div>
-                <span className="text-slate-300">•</span>
-                <div className={`flex items-center gap-1 text-xs ${
+                <span className="text-slate-300 shrink-0">•</span>
+                <div className={`flex items-center gap-1 text-xs flex-1 min-w-0 ${
                   passed ? 'text-slate-400' : 'text-slate-500'
                 }`}>
-                  <MapPin className="w-3 h-3" />
-                  <span className="font-medium truncate max-w-[120px]">{session.location}</span>
+                  <MapPin className="w-3 h-3 shrink-0" />
+                  <span className="font-medium break-words">{session.location}</span>
                 </div>
                 {session.room && (
                   <>
-                    <span className="text-slate-300">•</span>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                    <span className="text-slate-300 shrink-0">•</span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded shrink-0 ${
                       passed 
                         ? 'bg-slate-50 text-slate-400' 
-                        : 'bg-slate-100 text-slate-700'
+                        : 'bg-green-50 text-green-700 border border-green-200'
                     }`}>
                       قاعة {session.room}
                     </span>

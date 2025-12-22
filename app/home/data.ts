@@ -40,6 +40,7 @@ export const scheduleData: ClassSession[] = [
     date: "2025-12-22",
     time: "13:00",
     location: "ملحقة 1",
+    room: "3",
     professor: "الأستاذة هدى السبيطي",
     category: "Economics",
     initialLikes: 0,
@@ -83,17 +84,30 @@ export const scheduleData: ClassSession[] = [
     initialLikes: 0,
   },
 
-  // Saturday (Next Week) - Jan 3, 2026
+  // Wednesday - Dec 24, 2025
+  {
+    id: "8",
+    subject: "Compatibilité analytique",
+    day: "الأربعاء",
+    date: "2025-12-24",
+    time: "10:00",
+    location: "ملحقة 1",
+    room: "2",
+    professor: "الأستاذ محمد الشليق",
+    category: "Economics",
+    initialLikes: 0,
+  },
+
+  // Saturday - Jan 27, 2026
   {
     id: "7",
     subject: "Fiscalité",
     day: "السبت",
-    date: "2026-01-03", 
+    date: "2026-01-27", 
     time: "10:00",
     location: "ملحقة 1",
     room: "2",
     professor: "الأستاذ صهيب الحداد",
-    isNextWeek: true,
     category: "Economics",
     initialLikes: 0,
   },

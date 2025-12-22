@@ -20,7 +20,7 @@ export default function ScheduleManager() {
   const [selectedDay, setSelectedDay] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Extract unique days with their dates
+  // Extract unique days with their dates, sorted by date
   const days = useMemo(() => {
     const uniqueDays = new Map<string, string>();
     scheduleData.forEach(session => {
@@ -28,7 +28,9 @@ export default function ScheduleManager() {
         uniqueDays.set(session.day, session.date);
       }
     });
-    return Array.from(uniqueDays.entries()).map(([day, date]) => ({ day, date }));
+    return Array.from(uniqueDays.entries())
+      .map(([day, date]) => ({ day, date }))
+      .sort((a, b) => a.date.localeCompare(b.date)); // Sort by date chronologically
   }, []);
 
   // Filter logic
