@@ -7,6 +7,8 @@ import { ClassSession } from "./types";
   - The Probabilité class on Thursday (id "9") is explicitly marked with `isCancelled: true`
     so that the UI can communicate that this class has been canceled without deleting it
     from the schedule.
+  - The "قانون المواريث والحقول المالية" class (id "10") is marked with `isRescheduled: true`
+    to indicate it has been postponed to a later date.
 */
 
 export const scheduleData: ClassSession[] = [
@@ -125,6 +127,8 @@ export const scheduleData: ClassSession[] = [
     room: "5",
     professor: "الأستاذ عبد النور الأندلسي",
     category: "Law",
+    // This class has been rescheduled/postponed to a later date.
+    isRescheduled: true,
     initialLikes: 0,
   },
 

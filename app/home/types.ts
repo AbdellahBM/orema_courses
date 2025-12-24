@@ -22,6 +22,11 @@ export interface ClassSession {
    * will not take place, while still keeping the original slot visible in the calendar.
    */
   isCancelled?: boolean;
+  /**
+   * If true, the class has been rescheduled/postponed to a later date.
+   * The UI should display this status to inform students that the class will be held at a different time.
+   */
+  isRescheduled?: boolean;
   category?: string; // e.g., 'Law', 'Economics'
   /**
    * Hardcoded starting likes for this class (stored in code).
