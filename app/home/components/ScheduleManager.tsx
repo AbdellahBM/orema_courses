@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { scheduleData } from '../data';
 import ScheduleCard from './ScheduleCard';
+import DesktopScheduleView from './DesktopScheduleView';
 import { Filter, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { areAllClassesPassedForDay, isClassPassed } from '../utils/dateUtils';
@@ -42,7 +43,7 @@ export default function ScheduleManager() {
       .sort((a, b) => a.date.localeCompare(b.date)); // Sort by date chronologically
   }, []);
 
-  // Filter logic
+  // Filter logic for Mobile
   const filteredSessions = useMemo(() => {
     return scheduleData.filter(session => {
       // When "All" is selected, only show classes from today onwards (exclude past classes)
@@ -65,6 +66,21 @@ export default function ScheduleManager() {
         return a.time.localeCompare(b.time);
     });
   }, [selectedDay, searchTerm]);
+
+  // Filter logic for Desktop (ignores selectedDay, shows all matching search)
+  const desktopSessions = useMemo(() => {
+    return scheduleData.filter(session => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        session.subject.toLowerCase().includes(searchLower) ||
+        session.professor.toLowerCase().includes(searchLower) ||
+        session.location.toLowerCase().includes(searchLower)
+      );
+    }).sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.time.localeCompare(b.time);
+    });
+  }, [searchTerm]);
 
   // Format date for display
   const formatDate = (dateStr: string) => {
@@ -94,7 +110,7 @@ export default function ScheduleManager() {
   }, [days]);
 
   return (
-    <div className="px-4 pb-32 max-w-md mx-auto relative z-10">
+    <div className="px-4 pb-32 w-full max-w-md md:max-w-7xl mx-auto relative z-10">
       
       {/* Search Bar */}
       <div className="mb-6 relative">
@@ -110,77 +126,85 @@ export default function ScheduleManager() {
         />
       </div>
 
-      {/* Day Tabs - Fixed "All" button + Scrollable Days */}
-      <div className="mb-8 flex gap-2 items-start -mx-4 px-4">
-        {/* Fixed "All" Button */}
-        <motion.button
-          onClick={() => setSelectedDay('All')}
-          whileTap={{ scale: 0.95 }}
-          className={`
-            flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all duration-300 shrink-0
-            ${selectedDay === 'All' 
-              ? 'bg-blue-900 text-white scale-105' 
-              : 'bg-white text-gray-500 border border-gray-100'}
-          `}
-        >
-          <span className="text-sm font-bold">الكل</span>
-          <span className="text-[10px] opacity-80 mt-1">جميع الأيام</span>
-        </motion.button>
-
-        {/* Scrollable Days Container */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 overflow-x-auto pb-2 scrollbar-hide day-tabs-scroll snap-x snap-mandatory"
-        >
-          <div className="flex gap-2 min-w-max">
-            {days.map(({ day, date }) => {
-              const dayPassed = isDayPassed(day);
-              return (
-                <motion.button
-                  key={day}
-                  ref={(el) => {
-                    dayButtonRefs.current[day] = el;
-                  }}
-                  onClick={() => setSelectedDay(day)}
-                  whileTap={{ scale: 0.95 }}
-                  className={`
-                    flex flex-col items-center justify-center px-5 py-2 rounded-2xl transition-all duration-300 snap-start shrink-0
-                    ${dayPassed ? 'opacity-85' : ''}
-                    ${selectedDay === day 
-                      ? 'bg-blue-900 text-white scale-105' 
-                      : 'bg-white text-gray-500 border border-gray-100'}
-                  `}
-                >
-                  <span className="text-sm font-bold">{day}</span>
-                  <span className="text-[10px] opacity-80 mt-1">{formatDate(date)}</span>
-                </motion.button>
-              );
-            })}
-          </div>
-        </div>
+      {/* Desktop View */}
+      <div className="hidden md:block">
+        <DesktopScheduleView sessions={desktopSessions} />
       </div>
 
-      {/* Results */}
-      <div className="space-y-6 pb-32">
-        <AnimatePresence mode="popLayout">
-          {filteredSessions.length > 0 ? (
-            filteredSessions.map((session, index) => (
-              <ScheduleCard key={session.id} session={session} index={index} />
-            ))
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-center py-10"
-            >
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-                <Filter className="w-8 h-8" />
-              </div>
-              <p className="text-gray-500 font-medium">لا توجد حصص مطابقة للبحث</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {/* Mobile View */}
+      <div className="block md:hidden">
+        {/* Day Tabs - Fixed "All" button + Scrollable Days */}
+        <div className="mb-8 flex gap-2 items-start -mx-4 px-4">
+          {/* Fixed "All" Button */}
+          <motion.button
+            onClick={() => setSelectedDay('All')}
+            whileTap={{ scale: 0.95 }}
+            className={`
+              flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all duration-300 shrink-0
+              ${selectedDay === 'All' 
+                ? 'bg-blue-900 text-white scale-105' 
+                : 'bg-white text-gray-500 border border-gray-100'}
+            `}
+          >
+            <span className="text-sm font-bold">الكل</span>
+            <span className="text-[10px] opacity-80 mt-1">جميع الأيام</span>
+          </motion.button>
+
+          {/* Scrollable Days Container */}
+          <div
+            ref={scrollContainerRef}
+            className="flex-1 overflow-x-auto pb-2 scrollbar-hide day-tabs-scroll snap-x snap-mandatory"
+          >
+            <div className="flex gap-2 min-w-max">
+              {days.map(({ day, date }) => {
+                const dayPassed = isDayPassed(day);
+                return (
+                  <motion.button
+                    key={day}
+                    ref={(el) => {
+                      dayButtonRefs.current[day] = el;
+                    }}
+                    onClick={() => setSelectedDay(day)}
+                    whileTap={{ scale: 0.95 }}
+                    className={`
+                      flex flex-col items-center justify-center px-5 py-2 rounded-2xl transition-all duration-300 snap-start shrink-0
+                      ${dayPassed ? 'opacity-85' : ''}
+                      ${selectedDay === day 
+                        ? 'bg-blue-900 text-white scale-105' 
+                        : 'bg-white text-gray-500 border border-gray-100'}
+                    `}
+                  >
+                    <span className="text-sm font-bold">{day}</span>
+                    <span className="text-[10px] opacity-80 mt-1">{formatDate(date)}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Results */}
+        <div className="space-y-6 pb-32">
+          <AnimatePresence mode="popLayout">
+            {filteredSessions.length > 0 ? (
+              filteredSessions.map((session, index) => (
+                <ScheduleCard key={session.id} session={session} index={index} />
+              ))
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-center py-10"
+              >
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                  <Filter className="w-8 h-8" />
+                </div>
+                <p className="text-gray-500 font-medium">لا توجد حصص مطابقة للبحث</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
