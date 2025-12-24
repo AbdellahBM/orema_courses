@@ -26,9 +26,9 @@ export const scheduleData: ClassSession[] = [
   {
     id: "2",
     subject: "النظرية العامة للقانون الدستوري",
-    day: "الإثنين",
-    date: "2025-12-22",
-    time: "12:00",
+    day: "الجمعة",
+    date: "2025-12-26",
+    time: "10:00",
     location: "كلية الحقوق المركز بوخالف",
     room: "5",
     professor: "الأستاذ إبراهيم الصمدي",
@@ -128,12 +128,12 @@ export const scheduleData: ClassSession[] = [
     initialLikes: 0,
   },
 
-  // Saturday - Jan 27, 2026
+  // Saturday - Dec 27, 2025
   {
     id: "7",
     subject: "Fiscalité",
     day: "السبت",
-    date: "2026-01-27", 
+    date: "2025-12-27", 
     time: "10:00",
     location: "ملحقة 1",
     room: "2",
