@@ -1,10 +1,12 @@
 import { ClassSession } from "./types";
 
 /*
-  Data for the class schedule.
-  Contains the list of support classes for the week with precise ISO dates.
-  Base start date: Monday, Dec 22, 2025.
-  Note: `initialLikes` is the hardcoded starting value (editable in code).
+  File Purpose:
+  - Provides the static data source for the weekly class schedule used by the home page.
+  - Each entry conforms to `ClassSession`, enabling UI components to render consistent cards.
+  - The Probabilité class on Thursday (id "9") is explicitly marked with `isCancelled: true`
+    so that the UI can communicate that this class has been canceled without deleting it
+    from the schedule.
 */
 
 export const scheduleData: ClassSession[] = [
@@ -109,6 +111,8 @@ export const scheduleData: ClassSession[] = [
     room: "2",
     professor: "الأستاذ بلال الصبار",
     category: "Economics",
+     // This class has been canceled; keep it in the list but visually mark it in the UI.
+    isCancelled: true,
     initialLikes: 0,
   },
   {

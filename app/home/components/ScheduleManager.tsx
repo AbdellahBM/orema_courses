@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { scheduleData } from '../data';
 import ScheduleCard from './ScheduleCard';
 import { Filter, Search } from 'lucide-react';
@@ -8,17 +8,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { areAllClassesPassedForDay, isClassPassed } from '../utils/dateUtils';
 
 /*
-  Manages the schedule view, including filtering by day and searching.
-  Features:
-  - Day Tabs with Dates
-  - Search/Filter
-  - Animated transitions
-  - Day tabs with reduced opacity when all classes have passed
+  File Purpose:
+  - Manages the schedule view, including filtering, search, and the horizontal day tabs row.
+  - Provides an at-a-glance navigation between days while only showing upcoming classes by default.
+  - Updated so that the current (or next upcoming) day is selected and scrolled into view initially,
+    while past days remain accessible by sliding horizontally.
 */
 
+// Determine which day should be selected by default (today's or the next upcoming day).
+const getInitialSelectedDay = (): string => {
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const sortedByDate = [...scheduleData].sort((a, b) => a.date.localeCompare(b.date));
+  const upcoming = sortedByDate.find((session) => session.date >= todayISO);
+  return upcoming ? upcoming.day : 'All';
+};
+
 export default function ScheduleManager() {
-  const [selectedDay, setSelectedDay] = useState<string>('All');
+  const [selectedDay, setSelectedDay] = useState<string>(getInitialSelectedDay);
   const [searchTerm, setSearchTerm] = useState('');
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const dayButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   // Extract unique days with their dates, sorted by date
   const days = useMemo(() => {
@@ -68,6 +77,22 @@ export default function ScheduleManager() {
     return areAllClassesPassedForDay(day, scheduleData);
   };
 
+  // On mount, scroll the horizontal day tabs so that the current/next day is the first visible,
+  // keeping past days off-screen unless the user manually slides back.
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || days.length === 0) return;
+
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const targetDay = days.find((d) => d.date >= todayISO) ?? days[0];
+    const targetButton = dayButtonRefs.current[targetDay.day];
+
+    if (targetButton) {
+      const offset = Math.max(targetButton.offsetLeft - 16, 0); // small padding
+      container.scrollTo({ left: offset, behavior: 'auto' });
+    }
+  }, [days]);
+
   return (
     <div className="px-4 pb-32 max-w-md mx-auto relative z-10">
       
@@ -103,13 +128,19 @@ export default function ScheduleManager() {
         </motion.button>
 
         {/* Scrollable Days Container */}
-        <div className="flex-1 overflow-x-auto pb-2 scrollbar-hide day-tabs-scroll snap-x snap-mandatory">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-x-auto pb-2 scrollbar-hide day-tabs-scroll snap-x snap-mandatory"
+        >
           <div className="flex gap-2 min-w-max">
             {days.map(({ day, date }) => {
               const dayPassed = isDayPassed(day);
               return (
                 <motion.button
                   key={day}
+                  ref={(el) => {
+                    dayButtonRefs.current[day] = el;
+                  }}
                   onClick={() => setSelectedDay(day)}
                   whileTap={{ scale: 0.95 }}
                   className={`
