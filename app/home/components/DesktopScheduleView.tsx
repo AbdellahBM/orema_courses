@@ -4,6 +4,13 @@ import ScheduleCard from './ScheduleCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 
+/*
+  File Purpose:
+  - Renders the desktop calendar as a horizontally scrollable, RTL-aware strip of day columns.
+  - Used by `ScheduleManager` to show the full schedule on larger screens.
+  - Refactored so the calendar can run full-bleed with always-on navigation, letting cards slide all the way to the viewport edges without side limits.
+*/
+
 interface DesktopScheduleViewProps {
   sessions: ClassSession[];
 }
@@ -50,20 +57,20 @@ export default function DesktopScheduleView({ sessions }: DesktopScheduleViewPro
   const getDistanceFromStart = (el: HTMLElement) => {
     const max = getMaxScroll(el);
     const t = rtlScrollTypeRef.current;
-    if (t === 'negative') return Math.min(Math.max(-el.scrollLeft, 0), max);
-    if (t === 'reverse') return Math.min(Math.max(el.scrollLeft, 0), max);
+    if (t === 'negative') return -el.scrollLeft;
+    if (t === 'reverse') return el.scrollLeft;
     // default: scrollLeft starts at max and goes down to 0
-    return Math.min(Math.max(max - el.scrollLeft, 0), max);
+    return max - el.scrollLeft;
   };
 
   const setDistanceFromStart = (el: HTMLElement, distance: number, behavior: ScrollBehavior) => {
-    const max = getMaxScroll(el);
-    const clamped = Math.min(Math.max(distance, 0), max);
+    // Allow unlimited scrolling while translating the logical distance into native scrollLeft semantics
     const t = rtlScrollTypeRef.current;
+    const max = getMaxScroll(el);
     let nextScrollLeft = 0;
-    if (t === 'negative') nextScrollLeft = -clamped;
-    else if (t === 'reverse') nextScrollLeft = clamped;
-    else nextScrollLeft = max - clamped;
+    if (t === 'negative') nextScrollLeft = -distance;
+    else if (t === 'reverse') nextScrollLeft = distance;
+    else nextScrollLeft = max - distance; // default: invert against max to stay aligned with RTL start
     el.scrollTo({ left: nextScrollLeft, behavior });
   };
 
@@ -93,18 +100,9 @@ export default function DesktopScheduleView({ sessions }: DesktopScheduleViewPro
   const sortedDates = Object.keys(sessionsByDate).sort();
 
   const checkScroll = () => {
-    if (!containerRef.current) return;
-    const el = containerRef.current;
-    const max = getMaxScroll(el);
-    const dist = getDistanceFromStart(el);
-
-    const isAtStart = dist <= 10;
-    const isAtEnd = dist >= max - 10;
-
-    // In RTL: moving "left" increases distanceFromStart, moving "right" decreases.
-    // Show buttons only when there is room to scroll in that direction.
-    setShowLeftArrow(!isAtEnd);
-    setShowRightArrow(!isAtStart);
+    // Always show both arrows to allow unlimited scrolling in any direction
+    setShowLeftArrow(true);
+    setShowRightArrow(true);
   };
 
   useEffect(() => {
@@ -148,21 +146,17 @@ export default function DesktopScheduleView({ sessions }: DesktopScheduleViewPro
     const el = containerRef.current;
     if (!el) return;
 
-    const max = getMaxScroll(el);
     const current = getDistanceFromStart(el);
     const delta = getStep;
 
     const next = direction === 'left' ? current + delta : current - delta;
-    const clamped = Math.min(Math.max(next, 0), max);
 
-    // If we're already at the edge, do nothing (prevents the “bounce back” feeling).
-    if (Math.abs(clamped - current) < 1) return;
-
-    setDistanceFromStart(el, clamped, 'smooth');
+    // Allow unlimited scrolling - no clamping to bounds
+    setDistanceFromStart(el, next, 'smooth');
   };
 
   return (
-    <div className="relative group">
+    <div className="relative group w-full">
       {/* Left Arrow */}
       <AnimatePresence>
         {showLeftArrow && (
@@ -182,7 +176,7 @@ export default function DesktopScheduleView({ sessions }: DesktopScheduleViewPro
       {/* Scroll Container */}
       <div 
         ref={containerRef}
-        className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0"
+        className="flex w-full gap-6 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0"
       >
         {sortedDates.map((date, colIndex) => {
           const { dayName, sessions: daySessions } = sessionsByDate[date];
