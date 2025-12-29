@@ -6,7 +6,7 @@ import ScheduleCard from './ScheduleCard';
 import DesktopScheduleView from './DesktopScheduleView';
 import { Filter, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { areAllClassesPassedForDay, isClassPassed } from '../utils/dateUtils';
+import { isClassPassed } from '../utils/dateUtils';
 
 /*
   File Purpose:
@@ -17,30 +17,31 @@ import { areAllClassesPassedForDay, isClassPassed } from '../utils/dateUtils';
   - Desktop calendar now renders in a full-bleed container so cards can slide to the viewport edges without side padding constraints.
 */
 
-// Determine which day should be selected by default (today's or the next upcoming day).
-const getInitialSelectedDay = (): string => {
+// Determine which date should be selected by default (today's or the next upcoming date).
+const getInitialSelectedDate = (): string => {
   const todayISO = new Date().toISOString().slice(0, 10);
   const sortedByDate = [...scheduleData].sort((a, b) => a.date.localeCompare(b.date));
   const upcoming = sortedByDate.find((session) => session.date >= todayISO);
-  return upcoming ? upcoming.day : 'All';
+  return upcoming ? upcoming.date : 'All';
 };
 
 export default function ScheduleManager() {
-  const [selectedDay, setSelectedDay] = useState<string>(getInitialSelectedDay);
+  const [selectedDate, setSelectedDate] = useState<string>(getInitialSelectedDate);
   const [searchTerm, setSearchTerm] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const dayButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  // Extract unique days with their dates, sorted by date
+  // Extract unique dates with their day names, sorted by date
+  // This ensures each date appears in the day list, even if multiple dates share the same day name
   const days = useMemo(() => {
-    const uniqueDays = new Map<string, string>();
+    const uniqueDates = new Map<string, string>();
     scheduleData.forEach(session => {
-      if (!uniqueDays.has(session.day)) {
-        uniqueDays.set(session.day, session.date);
+      if (!uniqueDates.has(session.date)) {
+        uniqueDates.set(session.date, session.day);
       }
     });
-    return Array.from(uniqueDays.entries())
-      .map(([day, date]) => ({ day, date }))
+    return Array.from(uniqueDates.entries())
+      .map(([date, day]) => ({ day, date }))
       .sort((a, b) => a.date.localeCompare(b.date)); // Sort by date chronologically
   }, []);
 
@@ -48,25 +49,25 @@ export default function ScheduleManager() {
   const filteredSessions = useMemo(() => {
     return scheduleData.filter(session => {
       // When "All" is selected, only show classes from today onwards (exclude past classes)
-      if (selectedDay === 'All') {
+      if (selectedDate === 'All') {
         const isPassed = isClassPassed(session.date, session.time);
         if (isPassed) return false;
       }
       
-      const matchesDay = selectedDay === 'All' || session.day === selectedDay;
+      const matchesDate = selectedDate === 'All' || session.date === selectedDate;
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = 
         session.subject.toLowerCase().includes(searchLower) ||
         session.professor.toLowerCase().includes(searchLower) ||
         session.location.toLowerCase().includes(searchLower);
         
-      return matchesDay && matchesSearch;
+      return matchesDate && matchesSearch;
     }).sort((a, b) => {
         // Sort by date then time
         if (a.date !== b.date) return a.date.localeCompare(b.date);
         return a.time.localeCompare(b.time);
     });
-  }, [selectedDay, searchTerm]);
+  }, [selectedDate, searchTerm]);
 
   // Filter logic for Desktop (ignores selectedDay, shows all matching search)
   const desktopSessions = useMemo(() => {
@@ -89,9 +90,11 @@ export default function ScheduleManager() {
     return new Intl.DateTimeFormat('ar-MA', { day: 'numeric', month: 'short' }).format(date);
   };
 
-  // Check if all classes for a day have passed
-  const isDayPassed = (day: string) => {
-    return areAllClassesPassedForDay(day, scheduleData);
+  // Check if all classes for a date have passed
+  const isDatePassed = (date: string) => {
+    const dateSessions = scheduleData.filter(s => s.date === date);
+    if (dateSessions.length === 0) return false;
+    return dateSessions.every(session => isClassPassed(session.date, session.time));
   };
 
   // On mount, scroll the horizontal day tabs so that the current/next day is the first visible,
@@ -102,7 +105,7 @@ export default function ScheduleManager() {
 
     const todayISO = new Date().toISOString().slice(0, 10);
     const targetDay = days.find((d) => d.date >= todayISO) ?? days[0];
-    const targetButton = dayButtonRefs.current[targetDay.day];
+    const targetButton = dayButtonRefs.current[targetDay.date];
 
     if (targetButton) {
       const offset = Math.max(targetButton.offsetLeft - 16, 0); // small padding
@@ -134,11 +137,11 @@ export default function ScheduleManager() {
           <div className="mb-8 flex gap-2 items-start -mx-4 px-4">
             {/* Fixed "All" Button */}
             <motion.button
-              onClick={() => setSelectedDay('All')}
+              onClick={() => setSelectedDate('All')}
               whileTap={{ scale: 0.95 }}
               className={`
                 flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all duration-300 shrink-0
-                ${selectedDay === 'All' 
+                ${selectedDate === 'All' 
                   ? 'bg-blue-900 text-white scale-105' 
                   : 'bg-white text-gray-500 border border-gray-100'}
               `}
@@ -154,19 +157,19 @@ export default function ScheduleManager() {
             >
               <div className="flex gap-2 min-w-max">
                 {days.map(({ day, date }) => {
-                  const dayPassed = isDayPassed(day);
+                  const datePassed = isDatePassed(date);
                   return (
                     <motion.button
-                      key={day}
+                      key={date}
                       ref={(el) => {
-                        dayButtonRefs.current[day] = el;
+                        dayButtonRefs.current[date] = el;
                       }}
-                      onClick={() => setSelectedDay(day)}
+                      onClick={() => setSelectedDate(date)}
                       whileTap={{ scale: 0.95 }}
                       className={`
                         flex flex-col items-center justify-center px-5 py-2 rounded-2xl transition-all duration-300 snap-start shrink-0
-                        ${dayPassed ? 'opacity-85' : ''}
-                        ${selectedDay === day 
+                        ${datePassed ? 'opacity-85' : ''}
+                        ${selectedDate === date 
                           ? 'bg-blue-900 text-white scale-105' 
                           : 'bg-white text-gray-500 border border-gray-100'}
                       `}

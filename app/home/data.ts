@@ -101,6 +101,31 @@ export const scheduleData: ClassSession[] = [
     category: "Economics",
     initialLikes: 0,
   },
+  // Wednesday - Dec 31, 2025
+  {
+    id: "11",
+    subject: "النظرية العامة للقانون الدستوري",
+    day: "الأربعاء",
+    date: "2025-12-31",
+    time: "12:00",
+    location: "كلية الحقوق المركز بوخالف",
+    room: "6",
+    professor: "الأستاذ إبراهيم الصمدي",
+    category: "Law",
+    initialLikes: 0,
+  },
+  {
+    id: "12",
+    subject: "قانون المواريث والحقول المالية",
+    day: "الأربعاء",
+    date: "2025-12-31",
+    time: "12:00",
+    location: "كلية الحقوق المركز بوخالف",
+    room: "5",
+    professor: "الأستاذ عبد النور الأندلسي",
+    category: "Law",
+    initialLikes: 0,
+  },
 
   // Thursday - Dec 25, 2025
   {
